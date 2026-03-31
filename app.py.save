@@ -1,4 +1,7 @@
-import os
+def init_db():
+    """Create all tables if they don't exist."""
+    conn = get_db()
+    conn.autocommit = Trueimport os
 import json
 import re
 from datetime import datetime, timedelta
@@ -41,85 +44,81 @@ def get_db():
 
 def init_db():
     """Create all tables if they don't exist."""
-    try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        conn.autocommit = True
-        c = conn.cursor()
+    conn = get_db()
+    c = conn.cursor()
 
-        # Negocios (tenants)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS negocios (
-                id SERIAL PRIMARY KEY,
-                nombre TEXT NOT NULL,
-                slug TEXT UNIQUE NOT NULL,
-                telefono_whatsapp TEXT,
-                zona_horaria TEXT DEFAULT 'America/Chicago',
-                direccion TEXT,
-                telefono_contacto TEXT,
-                activo BOOLEAN DEFAULT TRUE,
-                fecha_creacion TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+    # Negocios (tenants)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS negocios (
+            id SERIAL PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            telefono_whatsapp TEXT,
+            zona_horaria TEXT DEFAULT 'America/Chicago',
+            direccion TEXT,
+            telefono_contacto TEXT,
+            activo BOOLEAN DEFAULT TRUE,
+            fecha_creacion TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
 
-        # Servicios del negocio
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS servicios (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                nombre TEXT NOT NULL,
-                duracion_min INTEGER NOT NULL DEFAULT 30,
-                precio DECIMAL(10,2) NOT NULL,
-                activo BOOLEAN DEFAULT TRUE
-            )
-        """)
+    # Servicios del negocio
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS servicios (
+            id SERIAL PRIMARY KEY,
+            negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            nombre TEXT NOT NULL,
+            duracion_min INTEGER NOT NULL DEFAULT 30,
+            precio DECIMAL(10,2) NOT NULL,
+            activo BOOLEAN DEFAULT TRUE
+        )
+    """)
 
-        # Horarios del negocio (por día de semana)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS horarios (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                dia_semana INTEGER NOT NULL,
-                hora_inicio TIME NOT NULL,
-                hora_fin TIME NOT NULL,
-                activo BOOLEAN DEFAULT TRUE,
-                UNIQUE(negocio_id, dia_semana)
-            )
-        """)
+    # Horarios del negocio (por día de semana)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS horarios (
+            id SERIAL PRIMARY KEY,
+            negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            dia_semana INTEGER NOT NULL,
+            hora_inicio TIME NOT NULL,
+            hora_fin TIME NOT NULL,
+            activo BOOLEAN DEFAULT TRUE,
+            UNIQUE(negocio_id, dia_semana)
+        )
+    """)
 
-        # Citas
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS citas (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                servicio_id INTEGER REFERENCES servicios(id),
-                nombre_cliente TEXT NOT NULL,
-                telefono_cliente TEXT NOT NULL,
-                fecha DATE NOT NULL,
-                hora_inicio TIME NOT NULL,
-                hora_fin TIME NOT NULL,
-                estado TEXT DEFAULT 'confirmada',
-                recordatorio_enviado BOOLEAN DEFAULT FALSE,
-                notas TEXT,
-                fecha_creacion TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+    # Citas
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS citas (
+            id SERIAL PRIMARY KEY,
+            negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            servicio_id INTEGER REFERENCES servicios(id),
+            nombre_cliente TEXT NOT NULL,
+            telefono_cliente TEXT NOT NULL,
+            fecha DATE NOT NULL,
+            hora_inicio TIME NOT NULL,
+            hora_fin TIME NOT NULL,
+            estado TEXT DEFAULT 'confirmada',
+            recordatorio_enviado BOOLEAN DEFAULT FALSE,
+            notas TEXT,
+            fecha_creacion TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
 
-        # Conversaciones activas (para contexto de Claude)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS conversaciones (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                telefono_cliente TEXT NOT NULL,
-                mensajes JSONB DEFAULT '[]',
-                ultima_actividad TIMESTAMPTZ DEFAULT NOW(),
-                UNIQUE(negocio_id, telefono_cliente)
-            )
-        """)
+    # Conversaciones activas (para contexto de Claude)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS conversaciones (
+            id SERIAL PRIMARY KEY,
+            negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            telefono_cliente TEXT NOT NULL,
+            mensajes JSONB DEFAULT '[]',
+            ultima_actividad TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(negocio_id, telefono_cliente)
+        )
+    """)
 
-        conn.close()
-        print("Database initialized OK")
-    except Exception as e:
-        print(f"init_db: {e} (tables may already exist, continuing)")
+    conn.commit()
+    conn.close()
 
 
 # ══════════════════════════════════════════════
@@ -127,54 +126,51 @@ def init_db():
 # ══════════════════════════════════════════════
 def seed_demo():
     """Insert demo barbershop if no businesses exist."""
-    try:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) as cnt FROM negocios")
-        if c.fetchone()["cnt"] == 0:
-            # Crear barbería demo
-            c.execute("""
-                INSERT INTO negocios (nombre, slug, zona_horaria, direccion, telefono_contacto)
-                VALUES ('Barber Shop Demo', 'barbershop-demo', 'America/Chicago', '1234 Main St, Laredo TX', '(956) 555-0100')
-                RETURNING id
-            """)
-            negocio_id = c.fetchone()["id"]
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) as cnt FROM negocios")
+    if c.fetchone()["cnt"] == 0:
+        # Crear barbería demo
+        c.execute("""
+            INSERT INTO negocios (nombre, slug, zona_horaria, direccion, telefono_contacto)
+            VALUES ('Barber Shop Demo', 'barbershop-demo', 'America/Chicago', '1234 Main St, Laredo TX', '(956) 555-0100')
+            RETURNING id
+        """)
+        negocio_id = c.fetchone()["id"]
 
-            # Servicios
-            servicios = [
-                ("Corte de cabello", 30, 15.00),
-                ("Corte + Barba", 45, 25.00),
-                ("Barba (recorte)", 20, 10.00),
-                ("Corte de niño", 20, 12.00),
-                ("Afeitado clásico", 30, 18.00),
-                ("Diseño de cejas", 10, 5.00),
-            ]
-            for nombre, dur, precio in servicios:
-                c.execute(
-                    "INSERT INTO servicios (negocio_id, nombre, duracion_min, precio) VALUES (%s, %s, %s, %s)",
-                    (negocio_id, nombre, dur, precio)
-                )
+        # Servicios
+        servicios = [
+            ("Corte de cabello", 30, 15.00),
+            ("Corte + Barba", 45, 25.00),
+            ("Barba (recorte)", 20, 10.00),
+            ("Corte de niño", 20, 12.00),
+            ("Afeitado clásico", 30, 18.00),
+            ("Diseño de cejas", 10, 5.00),
+        ]
+        for nombre, dur, precio in servicios:
+            c.execute(
+                "INSERT INTO servicios (negocio_id, nombre, duracion_min, precio) VALUES (%s, %s, %s, %s)",
+                (negocio_id, nombre, dur, precio)
+            )
 
-            # Horarios: Lunes-Viernes 9am-7pm, Sábado 9am-5pm, Domingo cerrado
-            horarios = [
-                (0, "09:00", "19:00"),  # Lunes
-                (1, "09:00", "19:00"),  # Martes
-                (2, "09:00", "19:00"),  # Miércoles
-                (3, "09:00", "19:00"),  # Jueves
-                (4, "09:00", "19:00"),  # Viernes
-                (5, "09:00", "17:00"),  # Sábado
-            ]
-            for dia, inicio, fin in horarios:
-                c.execute(
-                    "INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin) VALUES (%s, %s, %s, %s)",
-                    (negocio_id, dia, inicio, fin)
-                )
+        # Horarios: Lunes-Viernes 9am-7pm, Sábado 9am-5pm, Domingo cerrado
+        horarios = [
+            (0, "09:00", "19:00"),  # Lunes
+            (1, "09:00", "19:00"),  # Martes
+            (2, "09:00", "19:00"),  # Miércoles
+            (3, "09:00", "19:00"),  # Jueves
+            (4, "09:00", "19:00"),  # Viernes
+            (5, "09:00", "17:00"),  # Sábado
+        ]
+        for dia, inicio, fin in horarios:
+            c.execute(
+                "INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin) VALUES (%s, %s, %s, %s)",
+                (negocio_id, dia, inicio, fin)
+            )
 
-            conn.commit()
-            print(f"Demo barbershop created with ID {negocio_id}")
-        conn.close()
-    except Exception as e:
-        print(f"seed_demo: {e} (demo may already exist, continuing)")
+        conn.commit()
+        print(f"Demo barbershop created with ID {negocio_id}")
+    conn.close()
 
 
 # ══════════════════════════════════════════════
