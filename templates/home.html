@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexlify — Appointment Bot</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--text:#e2e2e8;--muted:#6b6b80}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.grain{position:fixed;inset:0;opacity:.03;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")}
+.hero{max-width:720px;margin:0 auto;padding:120px 24px 80px;text-align:center}
+.badge{display:inline-block;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);border:1px solid rgba(0,206,201,.25);padding:6px 16px;border-radius:100px;margin-bottom:32px}
+h1{font-size:clamp(36px,6vw,56px);font-weight:700;line-height:1.1;margin-bottom:20px;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 50%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{font-size:18px;color:var(--muted);line-height:1.6;max-width:520px;margin:0 auto 48px}
+.cta{display:inline-block;background:var(--accent);color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;transition:transform .2s,box-shadow .2s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(108,92,231,.35)}
+.features{max-width:900px;margin:0 auto;padding:0 24px 100px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.feat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px}
+.feat-icon{font-size:28px;margin-bottom:16px}
+.feat h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.feat p{font-size:13px;color:var(--muted);line-height:1.5}
+.footer{text-align:center;padding:40px 24px;color:var(--muted);font-size:12px;font-family:'Space Mono',monospace;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="hero">
+  <div class="badge">Powered by AI</div>
+  <h1>Tu negocio atiende 24/7 por WhatsApp</h1>
+  <p class="sub">Tus clientes agendan, cancelan y reagendan citas por WhatsApp. Tú solo atiendes. Sin llamadas perdidas, sin citas olvidadas.</p>
+  <a href="/dashboard/barbershop-demo" class="cta">Ver Demo — Barbería</a>
+</div>
+
+<div class="features">
+  <div class="feat">
+    <div class="feat-icon">💬</div>
+    <h3>WhatsApp nativo</h3>
+    <p>Tus clientes no descargan apps. Escriben por WhatsApp y el bot se encarga de todo.</p>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">🧠</div>
+    <h3>IA que entiende</h3>
+    <p>No es un menú con botones. El cliente escribe como quiera y la IA entiende qué necesita.</p>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">📅</div>
+    <h3>Agenda inteligente</h3>
+    <p>Verifica disponibilidad en tiempo real. Sin dobles reservaciones, sin conflictos.</p>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">🔔</div>
+    <h3>Recordatorios automáticos</h3>
+    <p>24 horas antes, el cliente recibe un recordatorio. Menos no-shows, más ingresos.</p>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">📊</div>
+    <h3>Dashboard en tiempo real</h3>
+    <p>Ve tus citas del día, estadísticas, e ingresos desde tu celular o computadora.</p>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">🏪</div>
+    <h3>Multi-negocio</h3>
+    <p>Barberías, dentistas, salones, consultorios. Un sistema, cualquier negocio de citas.</p>
+  </div>
+</div>
+
+<div class="footer">
+  Nexlify Software & AI — 2025
+</div>
+</body>
+</html>
