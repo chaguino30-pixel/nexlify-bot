@@ -609,6 +609,108 @@ def dashboard(slug):
         return "Negocio no encontrado", 404
     return render_template("dashboard.html", negocio=negocio)
 
+@app.route("/dashboard/<slug>/config")
+def config_page(slug):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM negocios WHERE slug = %s AND activo = TRUE", (slug,))
+    negocio = c.fetchone()
+    conn.close()
+    if not negocio:
+        return "Negocio no encontrado", 404
+    return render_template("config.html", negocio=negocio)
+
+
+# ══════════════════════════════════════════════
+# Config API endpoints
+# ══════════════════════════════════════════════
+@app.route("/api/negocio/<int:negocio_id>", methods=["GET"])
+def api_get_negocio(negocio_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, nombre, slug, direccion, telefono_contacto, zona_horaria FROM negocios WHERE id = %s", (negocio_id,))
+    neg = c.fetchone()
+    conn.close()
+    if not neg:
+        return jsonify({"error": "No encontrado"}), 404
+    return jsonify(dict(neg))
+
+@app.route("/api/negocio/<int:negocio_id>", methods=["PUT"])
+def api_update_negocio(negocio_id):
+    data = request.json
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""UPDATE negocios SET nombre = %s, direccion = %s, telefono_contacto = %s
+        WHERE id = %s""", (data.get("nombre"), data.get("direccion"), data.get("telefono_contacto"), negocio_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/servicios/<int:negocio_id>", methods=["POST"])
+def api_add_servicio(negocio_id):
+    data = request.json
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("INSERT INTO servicios (negocio_id, nombre, duracion_min, precio) VALUES (%s,%s,%s,%s) RETURNING id",
+              (negocio_id, data["nombre"], data["duracion_min"], data["precio"]))
+    sid = c.fetchone()["id"]
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "id": sid})
+
+@app.route("/api/servicios/<int:servicio_id>", methods=["PUT"])
+def api_update_servicio(servicio_id):
+    data = request.json
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE servicios SET nombre=%s, duracion_min=%s, precio=%s, activo=%s WHERE id=%s",
+              (data["nombre"], data["duracion_min"], data["precio"], data.get("activo", True), servicio_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/servicios/<int:servicio_id>", methods=["DELETE"])
+def api_delete_servicio(servicio_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE servicios SET activo = FALSE WHERE id = %s", (servicio_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/horarios/<int:negocio_id>", methods=["GET"])
+def api_get_horarios(negocio_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM horarios WHERE negocio_id = %s ORDER BY dia_semana", (negocio_id,))
+    rows = c.fetchall()
+    conn.close()
+    result = []
+    for h in rows:
+        result.append({
+            "id": h["id"], "dia_semana": h["dia_semana"],
+            "hora_inicio": h["hora_inicio"].strftime("%H:%M"),
+            "hora_fin": h["hora_fin"].strftime("%H:%M"),
+            "activo": h["activo"]
+        })
+    return jsonify(result)
+
+@app.route("/api/horarios/<int:negocio_id>", methods=["POST"])
+def api_save_horarios(negocio_id):
+    data = request.json  # list of {dia_semana, hora_inicio, hora_fin, activo}
+    conn = get_db()
+    c = conn.cursor()
+    for h in data:
+        c.execute("""INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin, activo)
+            VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT (negocio_id, dia_semana)
+            DO UPDATE SET hora_inicio=%s, hora_fin=%s, activo=%s""",
+            (negocio_id, h["dia_semana"], h["hora_inicio"], h["hora_fin"], h["activo"],
+             h["hora_inicio"], h["hora_fin"], h["activo"]))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
 
 # ══════════════════════════════════════════════
 # Init & Run

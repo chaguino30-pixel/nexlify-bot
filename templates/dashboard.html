@@ -13,6 +13,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header-left{display:flex;align-items:center;gap:12px}
 .logo{font-size:18px;font-weight:700;color:var(--accent)}
 .biz-name{font-size:14px;color:var(--muted);font-family:'Space Mono',monospace}
+.nav-link{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s;margin-left:8px}
+.nav-link:hover,.nav-link.active{color:var(--accent);border-color:var(--accent)}
 .header-right{display:flex;align-items:center;gap:16px}
 .reloj{font-family:'Space Mono',monospace;font-size:13px;color:var(--muted)}
 .date-nav{display:flex;align-items:center;gap:8px}
@@ -66,6 +68,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="header-left">
     <span class="logo">Nexlify</span>
     <span class="biz-name">{{ negocio.nombre }}</span>
+    <a href="/dashboard/{{ negocio.slug }}" class="nav-link active">Citas</a>
+    <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link">Config</a>
   </div>
   <div class="header-right">
     <div class="date-nav">

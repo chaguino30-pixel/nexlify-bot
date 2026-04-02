@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ negocio.nombre }} — Configuración</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--surface:#12121a;--card:#16162a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--green:#00b894;--red:#e94560;--amber:#f59e0b;--text:#e2e2e8;--muted:#6b6b80;--radius:12px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:18px;font-weight:700;color:var(--accent)}
+.biz-name{font-size:14px;color:var(--muted);font-family:'Space Mono',monospace}
+.nav-links{display:flex;gap:12px}
+.nav-link{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--accent);border-color:var(--accent)}
+.content{max-width:800px;margin:0 auto;padding:24px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.section-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.section-title .icon{font-size:20px;margin-right:8px}
+label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-bottom:4px}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-full{margin-bottom:12px}
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:transform .1s,opacity .2s}
+.btn:hover{transform:scale(1.02)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:rgba(233,69,96,.15);color:var(--red);border:1px solid rgba(233,69,96,.3)}
+.btn-small{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Services list */
+.srv-item{display:grid;grid-template-columns:1fr 80px 80px 60px;gap:8px;align-items:center;padding:12px;border-bottom:1px solid var(--border);font-size:14px}
+.srv-item:last-child{border-bottom:none}
+.srv-name{font-weight:500}
+.srv-price{color:var(--green);font-weight:600;text-align:center}
+.srv-dur{color:var(--muted);font-size:12px;text-align:center;font-family:'Space Mono',monospace}
+.srv-actions{display:flex;gap:4px;justify-content:flex-end}
+.srv-inactive{opacity:.4}
+/* Schedule grid */
+.schedule-row{display:grid;grid-template-columns:100px 1fr 1fr 60px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.schedule-row:last-child{border-bottom:none}
+.day-name{font-weight:500;font-size:14px}
+.toggle{position:relative;width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on::after{transform:translateX(18px)}
+/* Edit modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:90%;max-width:420px}
+.modal h3{font-size:16px;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;z-index:200}
+.toast.show{opacity:1}
+.footer{text-align:center;padding:32px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;border-top:1px solid var(--border);margin-top:40px}
+@media(max-width:640px){
+  .srv-item{grid-template-columns:1fr 60px 60px 50px;font-size:13px}
+  .schedule-row{grid-template-columns:80px 1fr 1fr 50px}
+  .form-row{grid-template-columns:1fr}
+  .form-row.three{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="logo">Nexlify</span>
+    <span class="biz-name">{{ negocio.nombre }}</span>
+  </div>
+  <div class="nav-links">
+    <a href="/dashboard/{{ negocio.slug }}" class="nav-link">Citas</a>
+    <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link active">Configuración</a>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Business Info -->
+  <div class="section">
+    <div class="section-title"><span><span class="icon">🏪</span> Información del negocio</span></div>
+    <div class="form-full"><label>Nombre</label><input id="biz-nombre" placeholder="Nombre del negocio"></div>
+    <div class="form-row"><div><label>Dirección</label><input id="biz-dir" placeholder="Dirección"></div><div><label>Teléfono</label><input id="biz-tel" placeholder="(956) 555-0100"></div></div>
+    <button class="btn btn-primary" onclick="guardarNegocio()">Guardar cambios</button>
+  </div>
+
+  <!-- Services -->
+  <div class="section">
+    <div class="section-title"><span><span class="icon">✂️</span> Servicios</span><button class="btn btn-success btn-small" onclick="abrirModalServicio()">+ Agregar</button></div>
+    <div id="servicios-list"></div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="section">
+    <div class="section-title"><span><span class="icon">🕐</span> Horarios</span></div>
+    <div id="horarios-list"></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarHorarios()">Guardar horarios</button></div>
+  </div>
+
+</div>
+
+<!-- Edit Service Modal -->
+<div class="modal-overlay" id="modal-srv">
+  <div class="modal">
+    <h3 id="modal-srv-title">Agregar servicio</h3>
+    <input type="hidden" id="edit-srv-id">
+    <div class="form-full"><label>Nombre del servicio</label><input id="edit-srv-nombre" placeholder="Corte de cabello"></div>
+    <div class="form-row">
+      <div><label>Precio ($)</label><input id="edit-srv-precio" type="number" step="0.5" placeholder="15"></div>
+      <div><label>Duración (min)</label><input id="edit-srv-dur" type="number" step="5" placeholder="30"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-small" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-success btn-small" onclick="guardarServicio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="footer">Powered by Nexlify Software & AI</div>
+
+<script>
+var NID = {{ negocio.id }};
+var SLUG = '{{ negocio.slug }}';
+var diasNombres = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+var horariosDatos = [];
+
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+// ── Business Info ──
+function cargarNegocio(){
+  fetch('/api/negocio/'+NID).then(function(r){return r.json();}).then(function(d){
+    document.getElementById('biz-nombre').value=d.nombre||'';
+    document.getElementById('biz-dir').value=d.direccion||'';
+    document.getElementById('biz-tel').value=d.telefono_contacto||'';
+  });
+}
+function guardarNegocio(){
+  fetch('/api/negocio/'+NID,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nombre:document.getElementById('biz-nombre').value,
+      direccion:document.getElementById('biz-dir').value,
+      telefono_contacto:document.getElementById('biz-tel').value})
+  }).then(function(){toast('Información guardada');});
+}
+
+// ── Services ──
+function cargarServicios(){
+  fetch('/api/servicios/'+NID).then(function(r){return r.json();}).then(function(srvs){
+    var el=document.getElementById('servicios-list');
+    if(!srvs.length){el.innerHTML='<div style="padding:16px;color:var(--muted)">Sin servicios configurados</div>';return;}
+    var html='';
+    for(var i=0;i<srvs.length;i++){
+      var s=srvs[i];
+      var cls=s.activo?'':'srv-inactive';
+      html+='<div class="srv-item '+cls+'">'
+        +'<div class="srv-name">'+s.nombre+(s.activo?'':' (inactivo)')+'</div>'
+        +'<div class="srv-price">$'+s.precio.toFixed(0)+'</div>'
+        +'<div class="srv-dur">'+s.duracion_min+'min</div>'
+        +'<div class="srv-actions">'
+        +'<button class="btn btn-primary btn-small" onclick="editarServicio('+s.id+',\''+s.nombre.replace(/'/g,"\\'")+'\','+s.precio+','+s.duracion_min+')">Editar</button>'
+        +(s.activo?'<button class="btn btn-danger btn-small" onclick="eliminarServicio('+s.id+')">×</button>':'')
+        +'</div></div>';
+    }
+    el.innerHTML=html;
+  });
+}
+function abrirModalServicio(){
+  document.getElementById('modal-srv-title').textContent='Agregar servicio';
+  document.getElementById('edit-srv-id').value='';
+  document.getElementById('edit-srv-nombre').value='';
+  document.getElementById('edit-srv-precio').value='';
+  document.getElementById('edit-srv-dur').value='30';
+  document.getElementById('modal-srv').classList.add('show');
+}
+function editarServicio(id,nombre,precio,dur){
+  document.getElementById('modal-srv-title').textContent='Editar servicio';
+  document.getElementById('edit-srv-id').value=id;
+  document.getElementById('edit-srv-nombre').value=nombre;
+  document.getElementById('edit-srv-precio').value=precio;
+  document.getElementById('edit-srv-dur').value=dur;
+  document.getElementById('modal-srv').classList.add('show');
+}
+function cerrarModal(){document.getElementById('modal-srv').classList.remove('show');}
+function guardarServicio(){
+  var id=document.getElementById('edit-srv-id').value;
+  var data={nombre:document.getElementById('edit-srv-nombre').value,
+    precio:parseFloat(document.getElementById('edit-srv-precio').value),
+    duracion_min:parseInt(document.getElementById('edit-srv-dur').value)};
+  if(!data.nombre||!data.precio||!data.duracion_min){toast('Llena todos los campos');return;}
+  if(id){
+    data.activo=true;
+    fetch('/api/servicios/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      .then(function(){cerrarModal();cargarServicios();toast('Servicio actualizado');});
+  }else{
+    fetch('/api/servicios/'+NID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      .then(function(){cerrarModal();cargarServicios();toast('Servicio agregado');});
+  }
+}
+function eliminarServicio(id){
+  if(!confirm('¿Desactivar este servicio?'))return;
+  fetch('/api/servicios/'+id,{method:'DELETE'}).then(function(){cargarServicios();toast('Servicio desactivado');});
+}
+
+// ── Schedule ──
+function cargarHorarios(){
+  fetch('/api/horarios/'+NID).then(function(r){return r.json();}).then(function(hrs){
+    horariosDatos=[];
+    var mapaHorarios={};
+    for(var i=0;i<hrs.length;i++) mapaHorarios[hrs[i].dia_semana]=hrs[i];
+    var el=document.getElementById('horarios-list');
+    var html='';
+    for(var d=0;d<7;d++){
+      var h=mapaHorarios[d];
+      var activo=h?h.activo:false;
+      var ini=h?h.hora_inicio:'09:00';
+      var fin=h?h.hora_fin:'17:00';
+      horariosDatos.push({dia_semana:d,hora_inicio:ini,hora_fin:fin,activo:activo});
+      html+='<div class="schedule-row">'
+        +'<div class="day-name">'+diasNombres[d]+'</div>'
+        +'<div><input type="time" value="'+ini+'" onchange="horariosDatos['+d+'].hora_inicio=this.value" '+(activo?'':'disabled')+' id="hr-ini-'+d+'"></div>'
+        +'<div><input type="time" value="'+fin+'" onchange="horariosDatos['+d+'].hora_fin=this.value" '+(activo?'':'disabled')+' id="hr-fin-'+d+'"></div>'
+        +'<div><div class="toggle '+(activo?'on':'')+'" onclick="toggleDia('+d+')" id="tog-'+d+'"></div></div>'
+        +'</div>';
+    }
+    el.innerHTML=html;
+  });
+}
+function toggleDia(d){
+  horariosDatos[d].activo=!horariosDatos[d].activo;
+  var tog=document.getElementById('tog-'+d);
+  var ini=document.getElementById('hr-ini-'+d);
+  var fin=document.getElementById('hr-fin-'+d);
+  if(horariosDatos[d].activo){tog.classList.add('on');ini.disabled=false;fin.disabled=false;}
+  else{tog.classList.remove('on');ini.disabled=true;fin.disabled=true;}
+}
+function guardarHorarios(){
+  fetch('/api/horarios/'+NID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(horariosDatos)})
+    .then(function(){toast('Horarios guardados');});
+}
+
+cargarNegocio();
+cargarServicios();
+cargarHorarios();
+</script>
+</body>
+</html>
