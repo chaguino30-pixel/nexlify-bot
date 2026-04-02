@@ -327,6 +327,8 @@ REGLAS:
 - NO pongas número de cita en la confirmación, el sistema lo agrega.
 - Sin cita activa y quieren cancelar = diles que no tienen citas pendientes.
 - Cerrado hoy = sugiere próximo día disponible.
+- Si agendan para 2+ personas, usa un bloque CITA CONFIRMADA por persona. NUNCA repitas el mismo nombre dos veces.
+- Cada persona necesita su propio horario. Si dos personas piden la misma hora y el servicio dura 30min, pon a la segunda 30min después.
 
 PERSONALIDAD:
 - Usa emojis con moderación para que el chat se sienta ameno: ✂️ 💈 📅 ⏰ ✅ 👋 😊 🙌 👍
@@ -444,11 +446,11 @@ def webhook():
 
     # ── CITA CONFIRMADA (supports multiple in one message) ──
     elif "CITA CONFIRMADA" in texto_respuesta:
-        # Split response by CITA CONFIRMADA blocks
         bloques = texto_respuesta.split("CITA CONFIRMADA")
         citas_creadas = []
+        ya_procesadas = set()  # Track name+date+time to prevent in-batch duplicates
 
-        for bloque in bloques[1:]:  # Skip text before first CITA CONFIRMADA
+        for bloque in bloques[1:]:
             datos = parsear_confirmacion("CITA CONFIRMADA" + bloque)
             if datos.get("nombre") and datos.get("servicio") and datos.get("hora"):
                 servicio = encontrar_servicio(servicios, datos["servicio"])
@@ -456,9 +458,15 @@ def webhook():
                     fecha = parsear_fecha(datos.get("fecha", ""), tz) if datos.get("fecha") else ahora.date()
                     hora_inicio = parsear_hora(datos["hora"])
                     if hora_inicio:
+                        # In-batch dedup key
+                        clave = f"{datos['nombre'].lower()}|{fecha}|{hora_inicio}"
+                        if clave in ya_procesadas:
+                            continue
+                        ya_procesadas.add(clave)
+
                         hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])).time()
 
-                        # Anti-duplicate check
+                        # DB dedup check
                         conn = get_db()
                         cur = conn.cursor()
                         cur.execute("""SELECT id FROM citas WHERE negocio_id = %s AND telefono_cliente = %s
