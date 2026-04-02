@@ -279,7 +279,8 @@ def build_system_prompt(negocio, servicios, cita_activa, disponibilidad_resumen)
     prompt = f"""Eres el asistente virtual de {negocio['nombre']} por WhatsApp. Amable, profesional y directo.
 Responde en el MISMO idioma del cliente.
 
-FECHA Y HORA ACTUAL: {fecha}
+HOY ES: {fecha}
+IMPORTANTE: La fecha de HOY es {datetime.now(ZoneInfo(tz)).strftime('%d/%m/%Y')}. Cuando digas "hoy" o "mañana", verifica que corresponda a esta fecha. NO digas "mañana" si la fecha de la cita es la misma que HOY.
 DIRECCIÓN: {negocio['direccion'] or 'No configurada'}
 TEL: {negocio['telefono_contacto'] or 'No configurado'}
 
@@ -441,39 +442,41 @@ def webhook():
             if not texto_respuesta:
                 texto_respuesta = f"Tu cita #{cita_id} fue cancelada. ¿Para cuándo quieres la nueva cita?"
 
-    # ── CITA CONFIRMADA ──
+    # ── CITA CONFIRMADA (supports multiple in one message) ──
     elif "CITA CONFIRMADA" in texto_respuesta:
-        datos = parsear_confirmacion(texto_respuesta)
-        if datos.get("nombre") and datos.get("servicio") and datos.get("hora"):
-            servicio = encontrar_servicio(servicios, datos["servicio"])
-            if servicio:
-                fecha = parsear_fecha(datos.get("fecha", ""), tz) if datos.get("fecha") else ahora.date()
-                hora_inicio = parsear_hora(datos["hora"])
-                if hora_inicio:
-                    hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])).time()
+        # Split response by CITA CONFIRMADA blocks
+        bloques = texto_respuesta.split("CITA CONFIRMADA")
+        citas_creadas = []
 
-                    # Anti-duplicate: check if same client already has a confirmed appointment at same date/time
-                    conn = get_db()
-                    cur = conn.cursor()
-                    cur.execute("""SELECT id FROM citas WHERE negocio_id = %s AND telefono_cliente = %s
-                        AND fecha = %s AND hora_inicio = %s AND estado = 'confirmada'""",
-                        (neg_id, telefono, fecha, hora_inicio))
-                    duplicada = cur.fetchone()
-                    conn.close()
+        for bloque in bloques[1:]:  # Skip text before first CITA CONFIRMADA
+            datos = parsear_confirmacion("CITA CONFIRMADA" + bloque)
+            if datos.get("nombre") and datos.get("servicio") and datos.get("hora"):
+                servicio = encontrar_servicio(servicios, datos["servicio"])
+                if servicio:
+                    fecha = parsear_fecha(datos.get("fecha", ""), tz) if datos.get("fecha") else ahora.date()
+                    hora_inicio = parsear_hora(datos["hora"])
+                    if hora_inicio:
+                        hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])).time()
 
-                    if duplicada:
-                        texto_respuesta += f"\n\nYa tienes esta cita registrada (#{duplicada['id']})."
-                    else:
-                        # Validate slot is free
-                        slots = obtener_disponibilidad(neg_id, fecha, servicio["duracion_min"], tz)
-                        hora_fmt = hora_inicio.strftime("%I:%M %p")
-                        if hora_fmt in slots:
+                        # Anti-duplicate check
+                        conn = get_db()
+                        cur = conn.cursor()
+                        cur.execute("""SELECT id FROM citas WHERE negocio_id = %s AND telefono_cliente = %s
+                            AND fecha = %s AND hora_inicio = %s AND estado = 'confirmada'
+                            AND nombre_cliente = %s""",
+                            (neg_id, telefono, fecha, hora_inicio, datos["nombre"]))
+                        duplicada = cur.fetchone()
+                        conn.close()
+
+                        if not duplicada:
                             cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
-                            texto_respuesta += f"\n\nTu cita es la #{cita_id}."
-                        else:
-                            # Slot taken — still save but warn (Claude already validated against prompt data)
-                            cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
-                            texto_respuesta += f"\n\nTu cita es la #{cita_id}."
+                            citas_creadas.append(f"#{cita_id} ({datos['nombre']})")
+
+        if citas_creadas:
+            if len(citas_creadas) == 1:
+                texto_respuesta += f"\n\nTu cita es la {citas_creadas[0]}."
+            else:
+                texto_respuesta += f"\n\nCitas registradas: {', '.join(citas_creadas)}."
 
     # ── CANCELACION ──
     elif "CANCELACION CONFIRMADA" in texto_respuesta:
