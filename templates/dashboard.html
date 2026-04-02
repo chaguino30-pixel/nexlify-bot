@@ -9,8 +9,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0a0f;--surface:#12121a;--card:#16162a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--green:#00b894;--red:#e94560;--amber:#f59e0b;--text:#e2e2e8;--muted:#6b6b80;--radius:12px}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-/* Header */
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:12px}
 .header-left{display:flex;align-items:center;gap:12px}
 .logo{font-size:18px;font-weight:700;color:var(--accent)}
 .biz-name{font-size:14px;color:var(--muted);font-family:'Space Mono',monospace}
@@ -19,30 +18,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .date-nav{display:flex;align-items:center;gap:8px}
 .date-nav button{background:var(--card);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 .date-nav button:hover{border-color:var(--accent)}
+.btn-hoy{background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
 #fecha-display{font-size:14px;font-weight:600;min-width:160px;text-align:center}
-/* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:20px 24px}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px}
 .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;font-family:'Space Mono',monospace}
 .stat-value{font-size:28px;font-weight:700}
-.stat-value.green{color:var(--green)}
-.stat-value.red{color:var(--red)}
-.stat-value.amber{color:var(--amber)}
-.stat-value.accent{color:var(--accent)}
-/* Appointments list */
+.stat-value.green{color:var(--green)}.stat-value.red{color:var(--red)}.stat-value.amber{color:var(--amber)}.stat-value.accent{color:var(--accent)}
 .section{padding:0 24px 24px}
 .section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .section-title .dot{width:8px;height:8px;border-radius:50%}
 .citas-grid{display:grid;gap:10px}
-.cita{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;transition:border-color .2s}
+.cita{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:grid;grid-template-columns:80px 1fr auto;gap:16px;align-items:center;transition:border-color .2s}
 .cita:hover{border-color:var(--accent)}
-.cita-hora{text-align:center;min-width:70px}
+.cita-hora{text-align:center}
 .cita-hora .inicio{font-size:16px;font-weight:700;color:var(--accent2)}
 .cita-hora .fin{font-size:11px;color:var(--muted)}
+.cita-hora .duracion{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px}
 .cita-info h4{font-size:15px;font-weight:600;margin-bottom:2px}
-.cita-info .servicio{font-size:13px;color:var(--accent)}
+.cita-info .servicio{font-size:13px;color:var(--accent);font-weight:500}
+.cita-info .precio{font-size:12px;color:var(--green);font-weight:600}
 .cita-info .tel{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
-.cita-actions{display:flex;gap:6px}
+.cita-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .btn-sm{padding:6px 12px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:transform .1s}
 .btn-sm:hover{transform:scale(1.05)}
 .btn-completar{background:var(--green);color:#fff}
@@ -57,8 +54,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .footer{text-align:center;padding:32px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;border-top:1px solid var(--border);margin-top:40px}
 @media(max-width:640px){
   .cita{grid-template-columns:1fr;gap:8px}
-  .cita-actions{justify-content:flex-end}
+  .cita-hora{text-align:left;display:flex;gap:8px;align-items:baseline}
+  .cita-actions{justify-content:flex-start}
   .stats{grid-template-columns:1fr 1fr}
+  .header{padding:12px 16px}
 }
 </style>
 </head>
@@ -73,13 +72,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button onclick="cambiarFecha(-1)">‹</button>
       <span id="fecha-display"></span>
       <button onclick="cambiarFecha(1)">›</button>
+      <button class="btn-hoy" onclick="irAHoy()">Hoy</button>
     </div>
     <span class="reloj" id="reloj"></span>
   </div>
 </div>
 
-<div class="stats" id="stats">
-  <div class="stat"><div class="stat-label">Citas hoy</div><div class="stat-value accent" id="st-total">-</div></div>
+<div class="stats">
+  <div class="stat"><div class="stat-label">Citas</div><div class="stat-value accent" id="st-total">-</div></div>
   <div class="stat"><div class="stat-label">Completadas</div><div class="stat-value green" id="st-comp">-</div></div>
   <div class="stat"><div class="stat-label">Canceladas</div><div class="stat-value red" id="st-cancel">-</div></div>
   <div class="stat"><div class="stat-label">No-shows</div><div class="stat-value amber" id="st-noshow">-</div></div>
@@ -94,80 +94,64 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="footer">Powered by Nexlify Software & AI</div>
 
 <script>
-var NEGOCIO_ID = {{ negocio.id }};
+var NID = {{ negocio.id }};
 var fechaActual = new Date();
 var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 setInterval(function(){
-  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }, 1000);
 
-function formatFecha(d){
-  return dias[d.getDay()] + ' ' + d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
-}
-function isoFecha(d){
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function cambiarFecha(delta){
-  fechaActual.setDate(fechaActual.getDate() + delta);
-  cargar();
-}
+function fmt(d){ return dias[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()]+' '+d.getFullYear(); }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cambiarFecha(delta){ fechaActual.setDate(fechaActual.getDate()+delta); cargar(); }
+function irAHoy(){ fechaActual = new Date(); cargar(); }
+
 function cargar(){
-  document.getElementById('fecha-display').textContent = formatFecha(fechaActual);
-  var f = isoFecha(fechaActual);
+  document.getElementById('fecha-display').textContent = fmt(fechaActual);
+  var f = iso(fechaActual);
 
-  fetch('/api/citas/'+NEGOCIO_ID+'?fecha='+f)
-    .then(function(r){return r.json();})
-    .then(function(citas){
-      var el = document.getElementById('citas-list');
-      if(!citas.length){
-        el.innerHTML = '<div class="vacio">Sin citas para este día</div>';
-        return;
+  fetch('/api/citas/'+NID+'?fecha='+f).then(function(r){return r.json();}).then(function(citas){
+    var el = document.getElementById('citas-list');
+    if(!citas.length){ el.innerHTML='<div class="vacio">Sin citas para este día</div>'; return; }
+    var html='';
+    for(var i=0;i<citas.length;i++){
+      var c=citas[i];
+      var acciones='';
+      if(c.estado==='confirmada'){
+        acciones='<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">Completada</button>'
+          +'<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">No show</button>'
+          +'<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">Cancelar</button>';
+      } else {
+        acciones='<span class="estado-badge estado-'+c.estado+'">'+c.estado.replace('_',' ')+'</span>';
       }
-      var html = '';
-      for(var i=0;i<citas.length;i++){
-        var c = citas[i];
-        var acciones = '';
-        if(c.estado === 'confirmada'){
-          acciones = '<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">Completada</button>'
-            + '<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">No show</button>'
-            + '<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">Cancelar</button>';
-        } else {
-          acciones = '<span class="estado-badge estado-'+c.estado+'">'+c.estado.replace('_',' ')+'</span>';
-        }
-        html += '<div class="cita">'
-          + '<div class="cita-hora"><div class="inicio">'+c.hora_inicio+'</div><div class="fin">'+c.hora_fin+'</div></div>'
-          + '<div class="cita-info"><h4>'+c.nombre_cliente+'</h4><div class="servicio">'+( c.servicio_nombre || 'Servicio')+'</div><div class="tel">'+c.telefono_cliente+'</div></div>'
-          + '<div class="cita-actions">'+acciones+'</div>'
-          + '</div>';
-      }
-      el.innerHTML = html;
-    });
+      html+='<div class="cita">'
+        +'<div class="cita-hora"><div class="inicio">'+c.hora_inicio+'</div><div class="fin">'+c.hora_fin+'</div><div class="duracion">'+c.duracion_min+'min</div></div>'
+        +'<div class="cita-info"><h4>'+c.nombre_cliente+'</h4><div class="servicio">'+c.servicio_nombre+'</div><div class="precio">$'+c.servicio_precio.toFixed(0)+'</div><div class="tel">'+c.telefono_cliente+'</div></div>'
+        +'<div class="cita-actions">'+acciones+'</div>'
+        +'</div>';
+    }
+    el.innerHTML=html;
+  });
 
-  fetch('/api/stats/'+NEGOCIO_ID+'?fecha='+f)
-    .then(function(r){return r.json();})
-    .then(function(s){
-      document.getElementById('st-total').textContent = s.hoy_total;
-      document.getElementById('st-comp').textContent = s.completadas;
-      document.getElementById('st-cancel').textContent = s.canceladas;
-      document.getElementById('st-noshow').textContent = s.no_shows;
-      document.getElementById('st-ingresos').textContent = '$'+s.ingresos.toFixed(0);
-    });
+  fetch('/api/stats/'+NID+'?fecha='+f).then(function(r){return r.json();}).then(function(s){
+    document.getElementById('st-total').textContent=s.hoy_total;
+    document.getElementById('st-comp').textContent=s.completadas;
+    document.getElementById('st-cancel').textContent=s.canceladas;
+    document.getElementById('st-noshow').textContent=s.no_shows;
+    document.getElementById('st-ingresos').textContent='$'+s.ingresos.toFixed(0);
+  });
 }
 
-function cambiarEstado(id, estado){
-  var msg = estado === 'cancelada' ? '¿Cancelar esta cita? Se notificará al cliente.' : '¿Marcar como '+estado.replace('_',' ')+'?';
-  if(!confirm(msg)) return;
-  fetch('/api/citas/'+id+'/estado',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({estado:estado})
-  }).then(function(){cargar();});
+function cambiarEstado(id,estado){
+  var msg=estado==='cancelada'?'¿Cancelar esta cita? Se notificará al cliente.':'¿Marcar como '+estado.replace('_',' ')+'?';
+  if(!confirm(msg))return;
+  fetch('/api/citas/'+id+'/estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:estado})}).then(function(){cargar();});
 }
 
 cargar();
-setInterval(cargar, 10000);
+setInterval(cargar,8000);
 </script>
 </body>
 </html>

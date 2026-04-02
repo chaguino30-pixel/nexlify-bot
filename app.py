@@ -1,8 +1,9 @@
 import os
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
+from decimal import Decimal
 
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from twilio.twiml.messaging_response import MessagingResponse
@@ -40,81 +41,40 @@ def get_db():
 
 
 def init_db():
-    """Create all tables if they don't exist."""
     try:
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
         conn.autocommit = True
         c = conn.cursor()
 
-        # Negocios (tenants)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS negocios (
-                id SERIAL PRIMARY KEY,
-                nombre TEXT NOT NULL,
-                slug TEXT UNIQUE NOT NULL,
-                telefono_whatsapp TEXT,
-                zona_horaria TEXT DEFAULT 'America/Chicago',
-                direccion TEXT,
-                telefono_contacto TEXT,
-                activo BOOLEAN DEFAULT TRUE,
-                fecha_creacion TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+        c.execute("""CREATE TABLE IF NOT EXISTS negocios (
+            id SERIAL PRIMARY KEY, nombre TEXT NOT NULL, slug TEXT UNIQUE NOT NULL,
+            telefono_whatsapp TEXT, zona_horaria TEXT DEFAULT 'America/Chicago',
+            direccion TEXT, telefono_contacto TEXT, activo BOOLEAN DEFAULT TRUE,
+            fecha_creacion TIMESTAMPTZ DEFAULT NOW())""")
 
-        # Servicios del negocio
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS servicios (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                nombre TEXT NOT NULL,
-                duracion_min INTEGER NOT NULL DEFAULT 30,
-                precio DECIMAL(10,2) NOT NULL,
-                activo BOOLEAN DEFAULT TRUE
-            )
-        """)
+        c.execute("""CREATE TABLE IF NOT EXISTS servicios (
+            id SERIAL PRIMARY KEY, negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            nombre TEXT NOT NULL, duracion_min INTEGER NOT NULL DEFAULT 30,
+            precio DECIMAL(10,2) NOT NULL, activo BOOLEAN DEFAULT TRUE)""")
 
-        # Horarios del negocio (por día de semana)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS horarios (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                dia_semana INTEGER NOT NULL,
-                hora_inicio TIME NOT NULL,
-                hora_fin TIME NOT NULL,
-                activo BOOLEAN DEFAULT TRUE,
-                UNIQUE(negocio_id, dia_semana)
-            )
-        """)
+        c.execute("""CREATE TABLE IF NOT EXISTS horarios (
+            id SERIAL PRIMARY KEY, negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            dia_semana INTEGER NOT NULL, hora_inicio TIME NOT NULL, hora_fin TIME NOT NULL,
+            activo BOOLEAN DEFAULT TRUE, UNIQUE(negocio_id, dia_semana))""")
 
-        # Citas
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS citas (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                servicio_id INTEGER REFERENCES servicios(id),
-                nombre_cliente TEXT NOT NULL,
-                telefono_cliente TEXT NOT NULL,
-                fecha DATE NOT NULL,
-                hora_inicio TIME NOT NULL,
-                hora_fin TIME NOT NULL,
-                estado TEXT DEFAULT 'confirmada',
-                recordatorio_enviado BOOLEAN DEFAULT FALSE,
-                notas TEXT,
-                fecha_creacion TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+        c.execute("""CREATE TABLE IF NOT EXISTS citas (
+            id SERIAL PRIMARY KEY, negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            servicio_id INTEGER REFERENCES servicios(id), nombre_cliente TEXT NOT NULL,
+            telefono_cliente TEXT NOT NULL, fecha DATE NOT NULL, hora_inicio TIME NOT NULL,
+            hora_fin TIME NOT NULL, estado TEXT DEFAULT 'confirmada',
+            recordatorio_enviado BOOLEAN DEFAULT FALSE, notas TEXT,
+            fecha_creacion TIMESTAMPTZ DEFAULT NOW())""")
 
-        # Conversaciones activas (para contexto de Claude)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS conversaciones (
-                id SERIAL PRIMARY KEY,
-                negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
-                telefono_cliente TEXT NOT NULL,
-                mensajes JSONB DEFAULT '[]',
-                ultima_actividad TIMESTAMPTZ DEFAULT NOW(),
-                UNIQUE(negocio_id, telefono_cliente)
-            )
-        """)
+        c.execute("""CREATE TABLE IF NOT EXISTS conversaciones (
+            id SERIAL PRIMARY KEY, negocio_id INTEGER REFERENCES negocios(id) ON DELETE CASCADE,
+            telefono_cliente TEXT NOT NULL, mensajes JSONB DEFAULT '[]',
+            ultima_actividad TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(negocio_id, telefono_cliente))""")
 
         conn.close()
         print("Database initialized OK")
@@ -126,65 +86,30 @@ def init_db():
 # Seed: barbería demo
 # ══════════════════════════════════════════════
 def seed_demo():
-    """Insert demo barbershop if no businesses exist."""
     try:
         conn = get_db()
         c = conn.cursor()
         c.execute("SELECT COUNT(*) as cnt FROM negocios")
         if c.fetchone()["cnt"] == 0:
-            # Crear barbería demo
-            c.execute("""
-                INSERT INTO negocios (nombre, slug, zona_horaria, direccion, telefono_contacto)
+            c.execute("""INSERT INTO negocios (nombre, slug, zona_horaria, direccion, telefono_contacto)
                 VALUES ('Barber Shop Demo', 'barbershop-demo', 'America/Chicago', '1234 Main St, Laredo TX', '(956) 555-0100')
-                RETURNING id
-            """)
-            negocio_id = c.fetchone()["id"]
-
-            # Servicios
-            servicios = [
-                ("Corte de cabello", 30, 15.00),
-                ("Corte + Barba", 45, 25.00),
-                ("Barba (recorte)", 20, 10.00),
-                ("Corte de niño", 20, 12.00),
-                ("Afeitado clásico", 30, 18.00),
-                ("Diseño de cejas", 10, 5.00),
-            ]
-            for nombre, dur, precio in servicios:
-                c.execute(
-                    "INSERT INTO servicios (negocio_id, nombre, duracion_min, precio) VALUES (%s, %s, %s, %s)",
-                    (negocio_id, nombre, dur, precio)
-                )
-
-            # Horarios: Lunes-Viernes 9am-7pm, Sábado 9am-5pm, Domingo cerrado
-            horarios = [
-                (0, "09:00", "19:00"),  # Lunes
-                (1, "09:00", "19:00"),  # Martes
-                (2, "09:00", "19:00"),  # Miércoles
-                (3, "09:00", "19:00"),  # Jueves
-                (4, "09:00", "19:00"),  # Viernes
-                (5, "09:00", "17:00"),  # Sábado
-            ]
-            for dia, inicio, fin in horarios:
-                c.execute(
-                    "INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin) VALUES (%s, %s, %s, %s)",
-                    (negocio_id, dia, inicio, fin)
-                )
-
+                RETURNING id""")
+            nid = c.fetchone()["id"]
+            for nombre, dur, precio in [("Corte de cabello",30,15),("Corte + Barba",45,25),("Barba (recorte)",20,10),("Corte de niño",20,12),("Afeitado clásico",30,18),("Diseño de cejas",10,5)]:
+                c.execute("INSERT INTO servicios (negocio_id, nombre, duracion_min, precio) VALUES (%s,%s,%s,%s)", (nid,nombre,dur,precio))
+            for dia,ini,fin in [(0,"09:00","19:00"),(1,"09:00","19:00"),(2,"09:00","19:00"),(3,"09:00","19:00"),(4,"09:00","19:00"),(5,"09:00","17:00")]:
+                c.execute("INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin) VALUES (%s,%s,%s,%s)", (nid,dia,ini,fin))
             conn.commit()
-            print(f"Demo barbershop created with ID {negocio_id}")
+            print(f"Demo barbershop created ID {nid}")
         conn.close()
     except Exception as e:
-        print(f"seed_demo: {e} (demo may already exist, continuing)")
+        print(f"seed_demo: {e} (continuing)")
 
 
 # ══════════════════════════════════════════════
 # Helper functions
 # ══════════════════════════════════════════════
 def obtener_negocio_por_telefono(telefono_cliente):
-    """Find which business a WhatsApp number is chatting with.
-    For now, return the first active business (single-tenant mode).
-    Multi-tenant routing will come in Phase 5.
-    """
     conn = get_db()
     c = conn.cursor()
     c.execute("SELECT * FROM negocios WHERE activo = TRUE ORDER BY id LIMIT 1")
@@ -192,120 +117,82 @@ def obtener_negocio_por_telefono(telefono_cliente):
     conn.close()
     return negocio
 
-
 def obtener_servicios(negocio_id):
     conn = get_db()
     c = conn.cursor()
     c.execute("SELECT * FROM servicios WHERE negocio_id = %s AND activo = TRUE ORDER BY precio", (negocio_id,))
-    servicios = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    return servicios
-
+    return rows
 
 def obtener_horario_hoy(negocio_id, zona_horaria="America/Chicago"):
     tz = ZoneInfo(zona_horaria)
-    ahora = datetime.now(tz)
-    dia = ahora.weekday()
+    dia = datetime.now(tz).weekday()
     conn = get_db()
     c = conn.cursor()
-    c.execute(
-        "SELECT * FROM horarios WHERE negocio_id = %s AND dia_semana = %s AND activo = TRUE",
-        (negocio_id, dia)
-    )
-    horario = c.fetchone()
+    c.execute("SELECT * FROM horarios WHERE negocio_id = %s AND dia_semana = %s AND activo = TRUE", (negocio_id, dia))
+    h = c.fetchone()
     conn.close()
-    return horario
+    return h
 
-
-def negocio_abierto(negocio_id, zona_horaria="America/Chicago"):
-    horario = obtener_horario_hoy(negocio_id, zona_horaria)
-    if not horario:
-        return False, None
-    tz = ZoneInfo(zona_horaria)
-    ahora = datetime.now(tz).time()
-    abierto = horario["hora_inicio"] <= ahora <= horario["hora_fin"]
-    return abierto, horario
-
+def obtener_horarios_semana(negocio_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM horarios WHERE negocio_id = %s AND activo = TRUE ORDER BY dia_semana", (negocio_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
 
 def obtener_citas_dia(negocio_id, fecha):
     conn = get_db()
     c = conn.cursor()
-    c.execute(
-        "SELECT * FROM citas WHERE negocio_id = %s AND fecha = %s AND estado != 'cancelada' ORDER BY hora_inicio",
-        (negocio_id, fecha)
-    )
-    citas = c.fetchall()
+    c.execute("""SELECT c.*, s.nombre as servicio_nombre, s.precio as servicio_precio, s.duracion_min
+        FROM citas c JOIN servicios s ON c.servicio_id = s.id
+        WHERE c.negocio_id = %s AND c.fecha = %s ORDER BY c.hora_inicio""", (negocio_id, fecha))
+    rows = c.fetchall()
     conn.close()
-    return citas
-
+    return rows
 
 def obtener_disponibilidad(negocio_id, fecha, duracion_min=30, zona_horaria="America/Chicago"):
-    """Get available time slots for a given date."""
     dia_semana = fecha.weekday()
     conn = get_db()
     c = conn.cursor()
-
-    # Get business hours for that day
-    c.execute(
-        "SELECT * FROM horarios WHERE negocio_id = %s AND dia_semana = %s AND activo = TRUE",
-        (negocio_id, dia_semana)
-    )
+    c.execute("SELECT * FROM horarios WHERE negocio_id = %s AND dia_semana = %s AND activo = TRUE", (negocio_id, dia_semana))
     horario = c.fetchone()
     if not horario:
         conn.close()
-        return []  # Closed that day
-
-    # Get existing appointments
-    c.execute(
-        "SELECT hora_inicio, hora_fin FROM citas WHERE negocio_id = %s AND fecha = %s AND estado != 'cancelada' ORDER BY hora_inicio",
-        (negocio_id, fecha)
-    )
-    citas_existentes = c.fetchall()
+        return []
+    c.execute("SELECT hora_inicio, hora_fin FROM citas WHERE negocio_id = %s AND fecha = %s AND estado != 'cancelada' ORDER BY hora_inicio", (negocio_id, fecha))
+    citas_ex = c.fetchall()
     conn.close()
 
-    # Generate slots every 30 min
     slots = []
     hora_actual = datetime.combine(fecha, horario["hora_inicio"])
     hora_cierre = datetime.combine(fecha, horario["hora_fin"])
+    tz = ZoneInfo(zona_horaria)
+    ahora = datetime.now(tz)
 
     while hora_actual + timedelta(minutes=duracion_min) <= hora_cierre:
-        slot_inicio = hora_actual.time()
-        slot_fin = (hora_actual + timedelta(minutes=duracion_min)).time()
-
-        # Check if slot conflicts with existing appointments
-        conflicto = False
-        for cita in citas_existentes:
-            if slot_inicio < cita["hora_fin"] and slot_fin > cita["hora_inicio"]:
-                conflicto = True
-                break
-
+        si = hora_actual.time()
+        sf = (hora_actual + timedelta(minutes=duracion_min)).time()
+        conflicto = any(si < cx["hora_fin"] and sf > cx["hora_inicio"] for cx in citas_ex)
         if not conflicto:
-            # Skip past times if it's today
-            tz = ZoneInfo(zona_horaria)
-            ahora = datetime.now(tz)
-            if fecha == ahora.date() and slot_inicio <= ahora.time():
+            if fecha == ahora.date() and si <= ahora.time():
                 hora_actual += timedelta(minutes=30)
                 continue
-            slots.append(slot_inicio.strftime("%I:%M %p"))
-
+            slots.append(si.strftime("%I:%M %p"))
         hora_actual += timedelta(minutes=30)
-
     return slots
-
 
 def guardar_cita(negocio_id, servicio_id, nombre, telefono, fecha, hora_inicio, hora_fin):
     conn = get_db()
     c = conn.cursor()
-    c.execute("""
-        INSERT INTO citas (negocio_id, servicio_id, nombre_cliente, telefono_cliente, fecha, hora_inicio, hora_fin)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-    """, (negocio_id, servicio_id, nombre, telefono, fecha, hora_inicio, hora_fin))
+    c.execute("""INSERT INTO citas (negocio_id, servicio_id, nombre_cliente, telefono_cliente, fecha, hora_inicio, hora_fin)
+        VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""", (negocio_id, servicio_id, nombre, telefono, fecha, hora_inicio, hora_fin))
     cita_id = c.fetchone()["id"]
     conn.commit()
     conn.close()
     return cita_id
-
 
 def cancelar_cita(cita_id):
     conn = get_db()
@@ -314,146 +201,184 @@ def cancelar_cita(cita_id):
     conn.commit()
     conn.close()
 
-
 def obtener_cita_activa(negocio_id, telefono):
     conn = get_db()
     c = conn.cursor()
-    c.execute("""
-        SELECT c.*, s.nombre as servicio_nombre, s.precio
-        FROM citas c
-        JOIN servicios s ON c.servicio_id = s.id
+    c.execute("""SELECT c.*, s.nombre as servicio_nombre, s.precio
+        FROM citas c JOIN servicios s ON c.servicio_id = s.id
         WHERE c.negocio_id = %s AND c.telefono_cliente = %s
         AND c.estado = 'confirmada' AND c.fecha >= CURRENT_DATE
-        ORDER BY c.fecha, c.hora_inicio LIMIT 1
-    """, (negocio_id, telefono))
+        ORDER BY c.fecha, c.hora_inicio LIMIT 1""", (negocio_id, telefono))
     cita = c.fetchone()
     conn.close()
     return cita
 
-
 def obtener_conversacion(negocio_id, telefono):
     conn = get_db()
     c = conn.cursor()
-    c.execute(
-        "SELECT mensajes FROM conversaciones WHERE negocio_id = %s AND telefono_cliente = %s",
-        (negocio_id, telefono)
-    )
+    c.execute("SELECT mensajes FROM conversaciones WHERE negocio_id = %s AND telefono_cliente = %s", (negocio_id, telefono))
     row = c.fetchone()
     conn.close()
     return row["mensajes"] if row else []
 
-
 def guardar_conversacion(negocio_id, telefono, mensajes):
     conn = get_db()
     c = conn.cursor()
-    # Keep only last 12 messages
     mensajes = mensajes[-12:]
-    c.execute("""
-        INSERT INTO conversaciones (negocio_id, telefono_cliente, mensajes, ultima_actividad)
-        VALUES (%s, %s, %s, NOW())
-        ON CONFLICT (negocio_id, telefono_cliente)
-        DO UPDATE SET mensajes = %s, ultima_actividad = NOW()
-    """, (negocio_id, telefono, json.dumps(mensajes), json.dumps(mensajes)))
+    c.execute("""INSERT INTO conversaciones (negocio_id, telefono_cliente, mensajes, ultima_actividad)
+        VALUES (%s, %s, %s, NOW()) ON CONFLICT (negocio_id, telefono_cliente)
+        DO UPDATE SET mensajes = %s, ultima_actividad = NOW()""",
+        (negocio_id, telefono, json.dumps(mensajes), json.dumps(mensajes)))
     conn.commit()
     conn.close()
-
 
 def fecha_hora_actual(zona_horaria="America/Chicago"):
     tz = ZoneInfo(zona_horaria)
     ahora = datetime.now(tz)
-    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    dias = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"]
     return f"{dias[ahora.weekday()]} {ahora.strftime('%d/%m/%Y')} - {ahora.strftime('%I:%M %p')}"
 
+def proximos_dias_disponibles(negocio_id, zona_horaria="America/Chicago", num_dias=5):
+    tz = ZoneInfo(zona_horaria)
+    hoy = datetime.now(tz).date()
+    resumen = []
+    nombres = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+    for i in range(num_dias):
+        fecha = hoy + timedelta(days=i)
+        slots = obtener_disponibilidad(negocio_id, fecha, zona_horaria=zona_horaria)
+        dia = "Hoy" if i == 0 else ("Mañana" if i == 1 else nombres[fecha.weekday()])
+        if slots:
+            muestra = ", ".join(slots[:5])
+            extra = f" (+{len(slots)-5} más)" if len(slots) > 5 else ""
+            resumen.append(f"  {dia} {fecha.strftime('%d/%m')}: {muestra}{extra}")
+        else:
+            resumen.append(f"  {dia} {fecha.strftime('%d/%m')}: Cerrado/Lleno")
+    return "\n".join(resumen)
+
 
 # ══════════════════════════════════════════════
-# Claude AI — System prompt builder
+# Claude AI — System prompt
 # ══════════════════════════════════════════════
-def build_system_prompt(negocio, servicios, horario_hoy, cita_activa, disponibilidad_hoy):
+def build_system_prompt(negocio, servicios, cita_activa, disponibilidad_resumen):
     tz = negocio["zona_horaria"]
     fecha = fecha_hora_actual(tz)
+    srv_list = "\n".join([f"  • {s['nombre']} — ${s['precio']:.0f} ({s['duracion_min']}min)" for s in servicios])
 
-    # Format services list
-    srv_list = " | ".join([f"{s['nombre']} ${s['precio']:.0f} ({s['duracion_min']}min)" for s in servicios])
+    horarios = obtener_horarios_semana(negocio["id"])
+    dias_nombres = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"]
+    dias_con_horario = set()
+    horario_lines = []
+    for h in horarios:
+        dias_con_horario.add(h["dia_semana"])
+        horario_lines.append(f"  {dias_nombres[h['dia_semana']]}: {h['hora_inicio'].strftime('%I:%M %p')} - {h['hora_fin'].strftime('%I:%M %p')}")
+    for i in range(7):
+        if i not in dias_con_horario:
+            horario_lines.append(f"  {dias_nombres[i]}: CERRADO")
+    horario_str = "\n".join(horario_lines)
 
-    # Format today's hours
-    if horario_hoy:
-        horario_str = f"{horario_hoy['hora_inicio'].strftime('%I:%M %p')} - {horario_hoy['hora_fin'].strftime('%I:%M %p')}"
-    else:
-        horario_str = "CERRADO HOY"
+    prompt = f"""Eres el asistente virtual de {negocio['nombre']} por WhatsApp. Amable, profesional y directo.
+Responde en el MISMO idioma del cliente.
 
-    # Format availability
-    if disponibilidad_hoy:
-        slots_str = ", ".join(disponibilidad_hoy[:8])  # Show max 8 slots
-        if len(disponibilidad_hoy) > 8:
-            slots_str += f" (y {len(disponibilidad_hoy)-8} más)"
-    else:
-        slots_str = "Sin horarios disponibles hoy"
-
-    prompt = f"""Eres el asistente virtual de {negocio['nombre']}. Habla en el idioma del cliente (español o inglés).
-
-FECHA Y HORA: {fecha}
+FECHA Y HORA ACTUAL: {fecha}
 DIRECCIÓN: {negocio['direccion'] or 'No configurada'}
-TEL CONTACTO: {negocio['telefono_contacto'] or 'No configurado'}
+TEL: {negocio['telefono_contacto'] or 'No configurado'}
 
-SERVICIOS: {srv_list}
+SERVICIOS:
+{srv_list}
 
-HORARIO HOY: {horario_str}
-DISPONIBILIDAD HOY: {slots_str}
+HORARIOS:
+{horario_str}
 
+DISPONIBILIDAD PRÓXIMOS DÍAS:
+{disponibilidad_resumen}
 """
 
     if cita_activa:
-        prompt += f"""CITA ACTIVA DEL CLIENTE:
-- Cita #{cita_activa['id']}: {cita_activa['servicio_nombre']} el {cita_activa['fecha'].strftime('%d/%m/%Y')} a las {cita_activa['hora_inicio'].strftime('%I:%M %p')}
-- Precio: ${cita_activa['precio']:.0f}
-
+        prompt += f"""
+CITA ACTIVA DEL CLIENTE:
+  #{cita_activa['id']}: {cita_activa['servicio_nombre']} — {cita_activa['fecha'].strftime('%d/%m/%Y')} a las {cita_activa['hora_inicio'].strftime('%I:%M %p')} — ${cita_activa['precio']:.0f}
 """
 
-    prompt += """REGLAS:
-- Ayuda al cliente a agendar citas. Pregunta qué servicio quiere, su nombre y la hora.
-- Cuando tengas toda la info, confirma usando EXACTAMENTE este formato:
+    prompt += """
+PARA AGENDAR — cuando tengas nombre, servicio, fecha y hora, responde EXACTAMENTE:
 
 CITA CONFIRMADA
 Nombre: [nombre]
-Servicio: [nombre servicio exacto del menú]
+Servicio: [nombre EXACTO del servicio]
 Fecha: [DD/MM/YYYY]
 Hora: [HH:MM AM/PM]
 
-- Si el cliente quiere cancelar y tiene cita activa, responde:
+PARA CANCELAR — si tiene cita activa y quiere cancelar:
 
 CANCELACION CONFIRMADA
-Cita: #[id de la cita activa]
+Cita: #[id]
 
-- Si preguntan por disponibilidad, muestra los horarios libres de hoy.
-- Si el horario que piden no está disponible, sugiere los más cercanos.
-- Máximo 3-4 líneas por respuesta.
-- No inventes servicios ni precios que no estén en la lista.
-- Si hoy está cerrado, diles cuándo abren (siguiente día hábil).
-- Sé amable, profesional y breve."""
+PARA REAGENDAR — cancela la actual y pregunta nueva fecha:
+
+REAGENDAR
+Cita cancelada: #[id]
+
+REGLAS:
+- Máximo 3-4 líneas. Sé breve y claro.
+- NO inventes servicios ni precios.
+- Si piden horario no disponible, sugiere los más cercanos.
+- Calcula fechas: "hoy", "mañana", "el viernes" = fecha real según FECHA ACTUAL.
+- NO pongas número de cita en la confirmación, el sistema lo agrega.
+- Sin cita activa y quieren cancelar = diles que no tienen citas pendientes.
+- Cerrado hoy = sugiere próximo día disponible."""
 
     return prompt
 
 
 # ══════════════════════════════════════════════
-# Parse Claude's response for actions
+# Parsers
 # ══════════════════════════════════════════════
 def parsear_confirmacion(texto):
     data = {}
     for linea in texto.split("\n"):
-        if "Nombre:" in linea:
-            data["nombre"] = linea.split("Nombre:")[1].strip()
-        elif "Servicio:" in linea:
-            data["servicio"] = linea.split("Servicio:")[1].strip()
-        elif "Fecha:" in linea:
-            data["fecha"] = linea.split("Fecha:")[1].strip()
-        elif "Hora:" in linea:
-            data["hora"] = linea.split("Hora:")[1].strip()
+        l = linea.replace("*","").strip()
+        if "Nombre:" in l: data["nombre"] = l.split("Nombre:")[1].strip()
+        elif "Servicio:" in l: data["servicio"] = l.split("Servicio:")[1].strip()
+        elif "Fecha:" in l: data["fecha"] = l.split("Fecha:")[1].strip()
+        elif "Hora:" in l: data["hora"] = l.split("Hora:")[1].strip()
     return data
 
-
 def parsear_cancelacion(texto):
-    match = re.search(r"Cita:\s*#(\d+)", texto)
-    return int(match.group(1)) if match else None
+    m = re.search(r"Cita.*?#(\d+)", texto)
+    return int(m.group(1)) if m else None
+
+def parsear_reagendar(texto):
+    m = re.search(r"Cita cancelada.*?#(\d+)", texto)
+    return int(m.group(1)) if m else None
+
+def encontrar_servicio(servicios, nombre_buscado):
+    nl = nombre_buscado.lower().strip()
+    for s in servicios:
+        if s["nombre"].lower() == nl:
+            return s
+    for s in servicios:
+        if nl in s["nombre"].lower() or s["nombre"].lower() in nl:
+            return s
+    return None
+
+def parsear_fecha(texto_fecha, zona_horaria="America/Chicago"):
+    tz = ZoneInfo(zona_horaria)
+    hoy = datetime.now(tz).date()
+    for fmt in ["%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
+        try:
+            return datetime.strptime(texto_fecha.strip(), fmt).date()
+        except ValueError:
+            pass
+    return hoy
+
+def parsear_hora(texto_hora):
+    texto = texto_hora.strip().upper()
+    for fmt in ["%I:%M %p", "%I:%M%p", "%H:%M", "%I %p", "%I%p"]:
+        try:
+            return datetime.strptime(texto, fmt).time()
+        except ValueError:
+            pass
+    return None
 
 
 # ══════════════════════════════════════════════
@@ -463,11 +388,9 @@ def parsear_cancelacion(texto):
 def webhook():
     telefono = request.form.get("From", "")
     mensaje = request.form.get("Body", "").strip()
-
     if not telefono or not mensaje:
         return str(MessagingResponse())
 
-    # Find the business this customer is chatting with
     negocio = obtener_negocio_por_telefono(telefono)
     if not negocio:
         resp = MessagingResponse()
@@ -476,100 +399,90 @@ def webhook():
 
     neg_id = negocio["id"]
     tz = negocio["zona_horaria"]
-
-    # Load context
     servicios = obtener_servicios(neg_id)
-    horario_hoy = obtener_horario_hoy(neg_id, tz)
     cita_activa = obtener_cita_activa(neg_id, telefono)
+    disponibilidad_resumen = proximos_dias_disponibles(neg_id, tz)
 
-    ahora = datetime.now(ZoneInfo(tz))
-    disponibilidad = obtener_disponibilidad(neg_id, ahora.date(), zona_horaria=tz)
-
-    # Build conversation
     historial = obtener_conversacion(neg_id, telefono)
     historial.append({"role": "user", "content": mensaje})
 
-    # Call Claude
-    system_prompt = build_system_prompt(negocio, servicios, horario_hoy, cita_activa, disponibilidad)
+    system_prompt = build_system_prompt(negocio, servicios, cita_activa, disponibilidad_resumen)
 
-    respuesta = claude.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=500,
-        system=system_prompt,
-        messages=historial
-    )
-    texto_respuesta = respuesta.content[0].text
+    try:
+        respuesta = claude.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=500,
+            system=system_prompt,
+            messages=historial
+        )
+        texto_respuesta = respuesta.content[0].text
+    except Exception as e:
+        print(f"Claude API error: {e}")
+        texto_respuesta = "Disculpa, tuve un problema técnico. ¿Podrías intentar de nuevo?"
 
-    # Save conversation
     historial.append({"role": "assistant", "content": texto_respuesta})
     guardar_conversacion(neg_id, telefono, historial)
 
-    # Process actions in Claude's response
-    if "CITA CONFIRMADA" in texto_respuesta:
+    ahora = datetime.now(ZoneInfo(tz))
+
+    # ── REAGENDAR ──
+    if "REAGENDAR" in texto_respuesta:
+        cita_id = parsear_reagendar(texto_respuesta)
+        if cita_id:
+            cancelar_cita(cita_id)
+            texto_respuesta = re.sub(r"REAGENDAR\s*\n.*?#\d+\s*\n?", "", texto_respuesta).strip()
+            if not texto_respuesta:
+                texto_respuesta = f"Tu cita #{cita_id} fue cancelada. ¿Para cuándo quieres la nueva cita?"
+
+    # ── CITA CONFIRMADA ──
+    elif "CITA CONFIRMADA" in texto_respuesta:
         datos = parsear_confirmacion(texto_respuesta)
         if datos.get("nombre") and datos.get("servicio") and datos.get("hora"):
-            # Find the service
-            servicio = next((s for s in servicios if s["nombre"].lower() == datos["servicio"].lower()), None)
+            servicio = encontrar_servicio(servicios, datos["servicio"])
             if servicio:
-                # Parse date (default today if not specified)
-                try:
-                    fecha = datetime.strptime(datos["fecha"], "%d/%m/%Y").date()
-                except (ValueError, KeyError):
-                    fecha = ahora.date()
+                fecha = parsear_fecha(datos.get("fecha", ""), tz) if datos.get("fecha") else ahora.date()
+                hora_inicio = parsear_hora(datos["hora"])
+                if hora_inicio:
+                    hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])).time()
+                    cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
+                    texto_respuesta += f"\n\nTu cita es la #{cita_id}."
 
-                # Parse time
-                try:
-                    hora_inicio = datetime.strptime(datos["hora"], "%I:%M %p").time()
-                    hora_fin_dt = datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])
-                    hora_fin = hora_fin_dt.time()
-                except ValueError:
-                    hora_inicio = None
-                    hora_fin = None
-
-                if hora_inicio and hora_fin:
-                    cita_id = guardar_cita(
-                        neg_id, servicio["id"], datos["nombre"],
-                        telefono, fecha, hora_inicio, hora_fin
-                    )
-                    texto_respuesta += f"\n\nTu cita es la #{cita_id}. ¡Te esperamos!"
-
-    if "CANCELACION CONFIRMADA" in texto_respuesta:
+    # ── CANCELACION ──
+    elif "CANCELACION CONFIRMADA" in texto_respuesta:
         cita_id = parsear_cancelacion(texto_respuesta)
         if cita_id:
             cancelar_cita(cita_id)
-            texto_respuesta = f"Tu cita #{cita_id} ha sido cancelada. Si cambias de opinión, escríbenos para reagendar."
+            texto_respuesta = f"Tu cita #{cita_id} ha sido cancelada. Si cambias de opinión, escríbenos para reagendar. ¡Hasta pronto!"
+        elif cita_activa:
+            cancelar_cita(cita_activa["id"])
+            texto_respuesta = f"Tu cita #{cita_activa['id']} ha sido cancelada. Si cambias de opinión, escríbenos para reagendar. ¡Hasta pronto!"
 
-    # Send response
     resp = MessagingResponse()
     resp.message(texto_respuesta)
     return str(resp)
 
 
 # ══════════════════════════════════════════════
-# API endpoints (for dashboard)
+# API endpoints
 # ══════════════════════════════════════════════
 @app.route("/api/citas/<int:negocio_id>")
 def api_citas(negocio_id):
     fecha_str = request.args.get("fecha")
-    if fecha_str:
-        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-    else:
-        fecha = datetime.now().date()
+    fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else datetime.now().date()
     citas = obtener_citas_dia(negocio_id, fecha)
-    # Convert to serializable format
-    result = []
-    for c in citas:
-        result.append({
-            "id": c["id"],
-            "nombre_cliente": c["nombre_cliente"],
-            "telefono_cliente": c["telefono_cliente"],
-            "fecha": c["fecha"].isoformat(),
-            "hora_inicio": c["hora_inicio"].strftime("%I:%M %p"),
-            "hora_fin": c["hora_fin"].strftime("%I:%M %p"),
-            "estado": c["estado"],
-            "notas": c["notas"],
-        })
-    return jsonify(result)
+    return jsonify([{
+        "id": c["id"],
+        "nombre_cliente": c["nombre_cliente"],
+        "telefono_cliente": c["telefono_cliente"],
+        "fecha": c["fecha"].isoformat(),
+        "hora_inicio": c["hora_inicio"].strftime("%I:%M %p"),
+        "hora_fin": c["hora_fin"].strftime("%I:%M %p"),
+        "estado": c["estado"],
+        "servicio_nombre": c.get("servicio_nombre", "Servicio"),
+        "servicio_precio": float(c["servicio_precio"]) if c.get("servicio_precio") else 0,
+        "duracion_min": c.get("duracion_min", 30),
+        "notas": c["notas"],
+    } for c in citas])
 
 
 @app.route("/api/citas/<int:cita_id>/estado", methods=["POST"])
@@ -583,21 +496,23 @@ def api_cambiar_estado(cita_id):
     c = conn.cursor()
     c.execute("UPDATE citas SET estado = %s WHERE id = %s", (nuevo_estado, cita_id))
 
-    # If cancelled, notify client via WhatsApp
-    if nuevo_estado == "cancelada":
-        c.execute("SELECT telefono_cliente, negocio_id FROM citas WHERE id = %s", (cita_id,))
-        cita = c.fetchone()
-        if cita:
-            c.execute("SELECT nombre FROM negocios WHERE id = %s", (cita["negocio_id"],))
-            neg = c.fetchone()
-            try:
+    # Notify client
+    c.execute("SELECT telefono_cliente, negocio_id FROM citas WHERE id = %s", (cita_id,))
+    cita = c.fetchone()
+    if cita:
+        c.execute("SELECT nombre FROM negocios WHERE id = %s", (cita["negocio_id"],))
+        neg = c.fetchone()
+        try:
+            if nuevo_estado == "cancelada":
                 twilio_client.messages.create(
                     body=f"Tu cita #{cita_id} en {neg['nombre']} ha sido cancelada. Disculpa el inconveniente.",
-                    from_=TWILIO_NUMBER,
-                    to=cita["telefono_cliente"]
-                )
-            except Exception as e:
-                print(f"Error sending cancellation: {e}")
+                    from_=TWILIO_NUMBER, to=cita["telefono_cliente"])
+            elif nuevo_estado == "completada":
+                twilio_client.messages.create(
+                    body=f"¡Gracias por visitarnos en {neg['nombre']}! Esperamos verte pronto.",
+                    from_=TWILIO_NUMBER, to=cita["telefono_cliente"])
+        except Exception as e:
+            print(f"Twilio notify error: {e}")
 
     conn.commit()
     conn.close()
@@ -607,42 +522,32 @@ def api_cambiar_estado(cita_id):
 @app.route("/api/servicios/<int:negocio_id>")
 def api_servicios(negocio_id):
     servicios = obtener_servicios(negocio_id)
-    return jsonify([dict(s) for s in servicios])
+    return jsonify([{"id": s["id"], "nombre": s["nombre"], "duracion_min": s["duracion_min"],
+                     "precio": float(s["precio"]), "activo": s["activo"]} for s in servicios])
 
 
 @app.route("/api/stats/<int:negocio_id>")
 def api_stats(negocio_id):
+    fecha_str = request.args.get("fecha")
+    fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date() if fecha_str else datetime.now().date()
+
     conn = get_db()
     c = conn.cursor()
-    hoy = datetime.now().date()
-
-    c.execute("SELECT COUNT(*) as total FROM citas WHERE negocio_id = %s AND fecha = %s AND estado != 'cancelada'", (negocio_id, hoy))
-    hoy_total = c.fetchone()["total"]
-
-    c.execute("SELECT COUNT(*) as total FROM citas WHERE negocio_id = %s AND fecha = %s AND estado = 'completada'", (negocio_id, hoy))
-    completadas = c.fetchone()["total"]
-
-    c.execute("SELECT COUNT(*) as total FROM citas WHERE negocio_id = %s AND fecha = %s AND estado = 'cancelada'", (negocio_id, hoy))
-    canceladas = c.fetchone()["total"]
-
-    c.execute("SELECT COUNT(*) as total FROM citas WHERE negocio_id = %s AND fecha = %s AND estado = 'no_show'", (negocio_id, hoy))
-    no_shows = c.fetchone()["total"]
-
-    c.execute("""
-        SELECT COALESCE(SUM(s.precio), 0) as total
-        FROM citas c JOIN servicios s ON c.servicio_id = s.id
-        WHERE c.negocio_id = %s AND c.fecha = %s AND c.estado = 'completada'
-    """, (negocio_id, hoy))
-    ingresos = float(c.fetchone()["total"])
-
+    c.execute("SELECT COUNT(*) as t FROM citas WHERE negocio_id=%s AND fecha=%s AND estado!='cancelada'", (negocio_id, fecha))
+    hoy_total = c.fetchone()["t"]
+    c.execute("SELECT COUNT(*) as t FROM citas WHERE negocio_id=%s AND fecha=%s AND estado='completada'", (negocio_id, fecha))
+    completadas = c.fetchone()["t"]
+    c.execute("SELECT COUNT(*) as t FROM citas WHERE negocio_id=%s AND fecha=%s AND estado='cancelada'", (negocio_id, fecha))
+    canceladas = c.fetchone()["t"]
+    c.execute("SELECT COUNT(*) as t FROM citas WHERE negocio_id=%s AND fecha=%s AND estado='no_show'", (negocio_id, fecha))
+    no_shows = c.fetchone()["t"]
+    c.execute("""SELECT COALESCE(SUM(s.precio),0) as t FROM citas c JOIN servicios s ON c.servicio_id=s.id
+        WHERE c.negocio_id=%s AND c.fecha=%s AND c.estado='completada'""", (negocio_id, fecha))
+    ingresos = float(c.fetchone()["t"])
     conn.close()
-    return jsonify({
-        "hoy_total": hoy_total,
-        "completadas": completadas,
-        "canceladas": canceladas,
-        "no_shows": no_shows,
-        "ingresos": ingresos,
-    })
+
+    return jsonify({"hoy_total": hoy_total, "completadas": completadas,
+                     "canceladas": canceladas, "no_shows": no_shows, "ingresos": ingresos})
 
 
 # ══════════════════════════════════════════════
@@ -651,7 +556,6 @@ def api_stats(negocio_id):
 @app.route("/")
 def home():
     return render_template("home.html")
-
 
 @app.route("/dashboard/<slug>")
 def dashboard(slug):
