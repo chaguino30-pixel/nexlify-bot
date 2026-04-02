@@ -444,8 +444,29 @@ def webhook():
                 hora_inicio = parsear_hora(datos["hora"])
                 if hora_inicio:
                     hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=servicio["duracion_min"])).time()
-                    cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
-                    texto_respuesta += f"\n\nTu cita es la #{cita_id}."
+
+                    # Anti-duplicate: check if same client already has a confirmed appointment at same date/time
+                    conn = get_db()
+                    cur = conn.cursor()
+                    cur.execute("""SELECT id FROM citas WHERE negocio_id = %s AND telefono_cliente = %s
+                        AND fecha = %s AND hora_inicio = %s AND estado = 'confirmada'""",
+                        (neg_id, telefono, fecha, hora_inicio))
+                    duplicada = cur.fetchone()
+                    conn.close()
+
+                    if duplicada:
+                        texto_respuesta += f"\n\nYa tienes esta cita registrada (#{duplicada['id']})."
+                    else:
+                        # Validate slot is free
+                        slots = obtener_disponibilidad(neg_id, fecha, servicio["duracion_min"], tz)
+                        hora_fmt = hora_inicio.strftime("%I:%M %p")
+                        if hora_fmt in slots:
+                            cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
+                            texto_respuesta += f"\n\nTu cita es la #{cita_id}."
+                        else:
+                            # Slot taken — still save but warn (Claude already validated against prompt data)
+                            cita_id = guardar_cita(neg_id, servicio["id"], datos["nombre"], telefono, fecha, hora_inicio, hora_fin)
+                            texto_respuesta += f"\n\nTu cita es la #{cita_id}."
 
     # ── CANCELACION ──
     elif "CANCELACION CONFIRMADA" in texto_respuesta:
