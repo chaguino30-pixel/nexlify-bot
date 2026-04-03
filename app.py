@@ -713,11 +713,138 @@ def api_save_horarios(negocio_id):
 
 
 # ══════════════════════════════════════════════
+# Fase 4: Recordatorios automáticos (1 hora antes)
+# ══════════════════════════════════════════════
+import threading
+import time
+
+def enviar_recordatorios():
+    """Check for appointments coming up in ~1 hour and send reminders."""
+    while True:
+        try:
+            conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+            conn.autocommit = True
+            c = conn.cursor()
+
+            # Get all active businesses
+            c.execute("SELECT * FROM negocios WHERE activo = TRUE")
+            negocios = c.fetchall()
+
+            for neg in negocios:
+                tz = ZoneInfo(neg["zona_horaria"])
+                ahora = datetime.now(tz)
+                en_1_hora = ahora + timedelta(minutes=60)
+
+                # Find confirmed appointments between now+50min and now+65min (window to catch them once)
+                c.execute("""
+                    SELECT c.*, s.nombre as servicio_nombre, n.nombre as negocio_nombre
+                    FROM citas c
+                    JOIN servicios s ON c.servicio_id = s.id
+                    JOIN negocios n ON c.negocio_id = n.id
+                    WHERE c.negocio_id = %s
+                    AND c.fecha = %s
+                    AND c.estado = 'confirmada'
+                    AND c.recordatorio_enviado = FALSE
+                    AND c.hora_inicio BETWEEN %s AND %s
+                """, (neg["id"], ahora.date(),
+                      (ahora + timedelta(minutes=50)).time(),
+                      (ahora + timedelta(minutes=70)).time()))
+
+                citas = c.fetchall()
+
+                for cita in citas:
+                    hora_str = cita["hora_inicio"].strftime("%I:%M %p")
+                    mensaje = (
+                        f"⏰ Recordatorio: tu cita de {cita['servicio_nombre']} "
+                        f"en {cita['negocio_nombre']} es en ~1 hora ({hora_str}).\n\n"
+                        f"¡Te esperamos! Si necesitas cancelar, responde \"cancelar\"."
+                    )
+                    try:
+                        twilio_client.messages.create(
+                            body=mensaje,
+                            from_=TWILIO_NUMBER,
+                            to=cita["telefono_cliente"]
+                        )
+                        # Mark as sent
+                        c.execute("UPDATE citas SET recordatorio_enviado = TRUE WHERE id = %s", (cita["id"],))
+                        print(f"Reminder sent for appointment #{cita['id']} to {cita['telefono_cliente']}")
+                    except Exception as e:
+                        print(f"Reminder send error for #{cita['id']}: {e}")
+
+            conn.close()
+        except Exception as e:
+            print(f"Reminder loop error: {e}")
+
+        # Check every 5 minutes
+        time.sleep(300)
+
+
+def iniciar_recordatorios():
+    """Start reminder thread as daemon."""
+    t = threading.Thread(target=enviar_recordatorios, daemon=True)
+    t.start()
+    print("Reminder system started (checking every 5 min)")
+
+
+# Manual trigger endpoint (for testing)
+@app.route("/api/recordatorios/check", methods=["POST"])
+def api_check_recordatorios():
+    """Manually trigger reminder check (for testing)."""
+    try:
+        conn = get_db()
+        conn.autocommit = True
+        c = conn.cursor()
+
+        enviados = 0
+        c.execute("SELECT * FROM negocios WHERE activo = TRUE")
+        negocios = c.fetchall()
+
+        for neg in negocios:
+            tz = ZoneInfo(neg["zona_horaria"])
+            ahora = datetime.now(tz)
+
+            c.execute("""
+                SELECT c.*, s.nombre as servicio_nombre, n.nombre as negocio_nombre
+                FROM citas c
+                JOIN servicios s ON c.servicio_id = s.id
+                JOIN negocios n ON c.negocio_id = n.id
+                WHERE c.negocio_id = %s AND c.fecha = %s AND c.estado = 'confirmada'
+                AND c.recordatorio_enviado = FALSE
+                AND c.hora_inicio BETWEEN %s AND %s
+            """, (neg["id"], ahora.date(),
+                  (ahora + timedelta(minutes=50)).time(),
+                  (ahora + timedelta(minutes=70)).time()))
+
+            citas = c.fetchall()
+            for cita in citas:
+                hora_str = cita["hora_inicio"].strftime("%I:%M %p")
+                mensaje = (
+                    f"⏰ Recordatorio: tu cita de {cita['servicio_nombre']} "
+                    f"en {cita['negocio_nombre']} es en ~1 hora ({hora_str}).\n\n"
+                    f"¡Te esperamos! Si necesitas cancelar, responde \"cancelar\"."
+                )
+                try:
+                    twilio_client.messages.create(body=mensaje, from_=TWILIO_NUMBER, to=cita["telefono_cliente"])
+                    c.execute("UPDATE citas SET recordatorio_enviado = TRUE WHERE id = %s", (cita["id"],))
+                    enviados += 1
+                except Exception as e:
+                    print(f"Manual reminder error: {e}")
+
+        conn.close()
+        return jsonify({"ok": True, "enviados": enviados})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ══════════════════════════════════════════════
 # Init & Run
 # ══════════════════════════════════════════════
 with app.app_context():
     init_db()
     seed_demo()
+
+# Start reminder thread
+iniciar_recordatorios()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
