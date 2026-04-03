@@ -109,11 +109,17 @@ def seed_demo():
 # ══════════════════════════════════════════════
 # Helper functions
 # ══════════════════════════════════════════════
-def obtener_negocio_por_telefono(telefono_cliente):
+def obtener_negocio_por_numero_twilio(numero_twilio):
+    """Route to the correct business based on which Twilio number received the message."""
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT * FROM negocios WHERE activo = TRUE ORDER BY id LIMIT 1")
+    # First try: match by the Twilio number the customer wrote TO
+    c.execute("SELECT * FROM negocios WHERE telefono_whatsapp = %s AND activo = TRUE", (numero_twilio,))
     negocio = c.fetchone()
+    if not negocio:
+        # Fallback: return first active business (single-tenant / sandbox mode)
+        c.execute("SELECT * FROM negocios WHERE activo = TRUE ORDER BY id LIMIT 1")
+        negocio = c.fetchone()
     conn.close()
     return negocio
 
@@ -400,10 +406,11 @@ def parsear_hora(texto_hora):
 def webhook():
     telefono = request.form.get("From", "")
     mensaje = request.form.get("Body", "").strip()
+    numero_destino = request.form.get("To", "")  # Which Twilio number they wrote to
     if not telefono or not mensaje:
         return str(MessagingResponse())
 
-    negocio = obtener_negocio_por_telefono(telefono)
+    negocio = obtener_negocio_por_numero_twilio(numero_destino)
     if not negocio:
         resp = MessagingResponse()
         resp.message("Lo sentimos, no hay un negocio configurado en este momento.")
@@ -651,6 +658,7 @@ def api_admin_negocios():
         result.append({
             "id": n["id"], "nombre": n["nombre"], "slug": n["slug"],
             "direccion": n["direccion"], "telefono_contacto": n["telefono_contacto"],
+            "telefono_whatsapp": n.get("telefono_whatsapp", ""),
             "zona_horaria": n["zona_horaria"], "activo": n["activo"],
             "citas_pendientes": n["citas_pendientes"], "citas_total": n["citas_total"],
             "fecha_creacion": n["fecha_creacion"].isoformat() if n["fecha_creacion"] else ""
@@ -680,10 +688,11 @@ def api_admin_crear_negocio():
     if c.fetchone():
         slug = slug + "-" + str(int(datetime.now().timestamp()) % 10000)
 
-    c.execute("""INSERT INTO negocios (nombre, slug, direccion, telefono_contacto, zona_horaria)
-        VALUES (%s, %s, %s, %s, %s) RETURNING id, slug""",
+    telefono_wa = data.get("telefono_whatsapp", "").strip()
+    c.execute("""INSERT INTO negocios (nombre, slug, direccion, telefono_contacto, telefono_whatsapp, zona_horaria)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, slug""",
         (nombre, slug, data.get("direccion", ""), data.get("telefono_contacto", ""),
-         data.get("zona_horaria", "America/Chicago")))
+         telefono_wa, data.get("zona_horaria", "America/Chicago")))
     row = c.fetchone()
     negocio_id = row["id"]
     slug_final = row["slug"]

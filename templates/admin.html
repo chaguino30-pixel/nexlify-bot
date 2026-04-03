@@ -65,9 +65,10 @@ input:focus{border-color:var(--accent)}
     <div class="form-full"><label>Nombre del negocio</label><input id="new-nombre" placeholder="Ej: Emi's Barbershop"></div>
     <div class="form-row">
       <div><label>Dirección</label><input id="new-dir" placeholder="123 Main St, Ciudad"></div>
-      <div><label>Teléfono</label><input id="new-tel" placeholder="(956) 555-0100"></div>
+      <div><label>Teléfono contacto</label><input id="new-tel" placeholder="(956) 555-0100"></div>
     </div>
     <div class="form-row">
+      <div><label>Número WhatsApp Twilio</label><input id="new-wa" placeholder="whatsapp:+1234567890"></div>
       <div><label>Zona horaria</label>
         <select id="new-tz">
           <option value="America/Chicago">Central (Laredo, CDMX, Monterrey)</option>
@@ -119,6 +120,7 @@ function cargar(){
         +'<h3>'+n.nombre+(n.activo?'':' (inactivo)')+'</h3>'
         +'<div class="slug">'+BASE+'/dashboard/'+n.slug+'</div>'
         +'<div class="meta">'+(n.direccion||'Sin dirección')+' · '+(n.telefono_contacto||'Sin tel')+'</div>'
+        +'<div class="meta" style="color:var(--accent2)">'+(n.telefono_whatsapp||'Sin número WhatsApp asignado')+'</div>'
         +'<div class="neg-stats">'
         +'<div class="neg-stat"><strong>'+n.citas_pendientes+'</strong> pendientes</div>'
         +'<div class="neg-stat"><strong>'+n.citas_total+'</strong> totales</div>'
@@ -140,6 +142,7 @@ function crearNegocio(){
     nombre: nombre,
     direccion: document.getElementById('new-dir').value.trim(),
     telefono_contacto: document.getElementById('new-tel').value.trim(),
+    telefono_whatsapp: document.getElementById('new-wa').value.trim(),
     zona_horaria: document.getElementById('new-tz').value
   };
   fetch('/api/admin/negocios?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
