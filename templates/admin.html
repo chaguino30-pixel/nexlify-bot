@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexlify — Admin Panel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--surface:#12121a;--card:#16162a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--green:#00b894;--red:#e94560;--amber:#f59e0b;--text:#e2e2e8;--muted:#6b6b80;--radius:12px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:20px;font-weight:700;color:var(--accent)}
+.badge{font-size:11px;background:var(--accent);color:#fff;padding:3px 10px;border-radius:100px;margin-left:8px;font-weight:600}
+.content{max-width:900px;margin:0 auto;padding:24px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.section-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-bottom:4px}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+input:focus{border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-full{margin-bottom:12px}
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:transform .1s}
+.btn:hover{transform:scale(1.02)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:rgba(233,69,96,.15);color:var(--red);border:1px solid rgba(233,69,96,.3)}
+.btn-small{padding:6px 12px;font-size:12px}
+.negocio-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.negocio-card.inactive{opacity:.5}
+.neg-info h3{font-size:16px;font-weight:600;margin-bottom:4px}
+.neg-info .slug{font-size:12px;color:var(--accent2);font-family:'Space Mono',monospace}
+.neg-info .meta{font-size:12px;color:var(--muted);margin-top:4px}
+.neg-stats{display:flex;gap:16px;margin-top:8px}
+.neg-stat{font-size:12px}
+.neg-stat strong{color:var(--accent)}
+.neg-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.link-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-family:'Space Mono',monospace;color:var(--accent2);word-break:break-all;margin-top:8px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;z-index:200}
+.toast.show{opacity:1}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.sum-num{font-size:32px;font-weight:700;color:var(--accent)}
+.sum-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:4px}
+.footer{text-align:center;padding:32px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;border-top:1px solid var(--border);margin-top:40px}
+@media(max-width:640px){.form-row{grid-template-columns:1fr}.summary{grid-template-columns:1fr}.negocio-card{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div><span class="logo">Nexlify</span><span class="badge">ADMIN</span></div>
+</div>
+
+<div class="content">
+
+  <div class="summary">
+    <div class="sum-card"><div class="sum-num" id="total-negocios">-</div><div class="sum-label">Negocios</div></div>
+    <div class="sum-card"><div class="sum-num" id="total-activos">-</div><div class="sum-label">Activos</div></div>
+    <div class="sum-card"><div class="sum-num" id="total-citas">-</div><div class="sum-label">Citas totales</div></div>
+  </div>
+
+  <!-- New business form -->
+  <div class="section">
+    <div class="section-title"><span>Crear nuevo negocio</span></div>
+    <div class="form-full"><label>Nombre del negocio</label><input id="new-nombre" placeholder="Ej: Emi's Barbershop"></div>
+    <div class="form-row">
+      <div><label>Dirección</label><input id="new-dir" placeholder="123 Main St, Ciudad"></div>
+      <div><label>Teléfono</label><input id="new-tel" placeholder="(956) 555-0100"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Zona horaria</label>
+        <select id="new-tz">
+          <option value="America/Chicago">Central (Laredo, CDMX, Monterrey)</option>
+          <option value="America/New_York">Eastern (Miami, NY)</option>
+          <option value="America/Denver">Mountain (Denver, El Paso)</option>
+          <option value="America/Los_Angeles">Pacific (LA, Tijuana)</option>
+          <option value="America/Mexico_City">CDMX</option>
+          <option value="America/Cancun">Cancún (EST)</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-success" onclick="crearNegocio()" style="width:100%">Crear negocio</button></div>
+    </div>
+    <div id="new-result" style="display:none;margin-top:12px">
+      <div style="color:var(--green);font-weight:600;margin-bottom:8px" id="new-msg"></div>
+      <div class="link-box" id="new-links"></div>
+    </div>
+  </div>
+
+  <!-- Business list -->
+  <div class="section">
+    <div class="section-title"><span>Negocios registrados</span></div>
+    <div id="negocios-list"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="footer">Nexlify Software & AI — Admin Panel</div>
+
+<script>
+var KEY = '{{ admin_key }}';
+var BASE = window.location.origin;
+
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+function cargar(){
+  fetch('/api/admin/negocios?key='+KEY).then(function(r){return r.json();}).then(function(negs){
+    document.getElementById('total-negocios').textContent = negs.length;
+    document.getElementById('total-activos').textContent = negs.filter(function(n){return n.activo;}).length;
+    document.getElementById('total-citas').textContent = negs.reduce(function(s,n){return s+n.citas_total;},0);
+
+    var el = document.getElementById('negocios-list');
+    if(!negs.length){el.innerHTML='<div style="color:var(--muted);padding:16px">No hay negocios registrados</div>';return;}
+    var html='';
+    for(var i=0;i<negs.length;i++){
+      var n=negs[i];
+      html+='<div class="negocio-card '+(n.activo?'':'inactive')+'">'
+        +'<div class="neg-info">'
+        +'<h3>'+n.nombre+(n.activo?'':' (inactivo)')+'</h3>'
+        +'<div class="slug">'+BASE+'/dashboard/'+n.slug+'</div>'
+        +'<div class="meta">'+(n.direccion||'Sin dirección')+' · '+(n.telefono_contacto||'Sin tel')+'</div>'
+        +'<div class="neg-stats">'
+        +'<div class="neg-stat"><strong>'+n.citas_pendientes+'</strong> pendientes</div>'
+        +'<div class="neg-stat"><strong>'+n.citas_total+'</strong> totales</div>'
+        +'</div></div>'
+        +'<div class="neg-actions">'
+        +'<a href="/dashboard/'+n.slug+'" class="btn btn-primary btn-small" target="_blank">Dashboard</a>'
+        +'<a href="/dashboard/'+n.slug+'/config" class="btn btn-small" style="background:var(--card);color:var(--text);border:1px solid var(--border)" target="_blank">Config</a>'
+        +'<button class="btn btn-small '+(n.activo?'btn-danger':'btn-success')+'" onclick="toggleNegocio('+n.id+')">'+(n.activo?'Desactivar':'Activar')+'</button>'
+        +'</div></div>';
+    }
+    el.innerHTML=html;
+  });
+}
+
+function crearNegocio(){
+  var nombre = document.getElementById('new-nombre').value.trim();
+  if(!nombre){toast('Pon el nombre del negocio');return;}
+  var data = {
+    nombre: nombre,
+    direccion: document.getElementById('new-dir').value.trim(),
+    telefono_contacto: document.getElementById('new-tel').value.trim(),
+    zona_horaria: document.getElementById('new-tz').value
+  };
+  fetch('/api/admin/negocios?key='+KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        document.getElementById('new-result').style.display='block';
+        document.getElementById('new-msg').textContent='Negocio creado: '+nombre;
+        document.getElementById('new-links').innerHTML=
+          'Dashboard: '+BASE+'/dashboard/'+d.slug+'<br>'
+          +'Config: '+BASE+'/dashboard/'+d.slug+'/config';
+        document.getElementById('new-nombre').value='';
+        document.getElementById('new-dir').value='';
+        document.getElementById('new-tel').value='';
+        toast('Negocio creado');
+        cargar();
+      } else {
+        toast('Error: '+d.error);
+      }
+    });
+}
+
+function toggleNegocio(id){
+  if(!confirm('¿Cambiar estado de este negocio?'))return;
+  fetch('/api/admin/negocios/'+id+'/toggle?key='+KEY,{method:'POST'}).then(function(){cargar();toast('Estado cambiado');});
+}
+
+cargar();
+</script>
+</body>
+</html>

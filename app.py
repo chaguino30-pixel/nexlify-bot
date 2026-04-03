@@ -622,6 +622,97 @@ def config_page(slug):
 
 
 # ══════════════════════════════════════════════
+# Admin panel (for you — Nexlify owner)
+# ══════════════════════════════════════════════
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "nexlify-admin-2025")
+
+@app.route("/admin")
+def admin_page():
+    key = request.args.get("key", "")
+    if key != ADMIN_KEY:
+        return "Acceso denegado. Usa /admin?key=TU_CLAVE", 403
+    return render_template("admin.html", admin_key=ADMIN_KEY)
+
+@app.route("/api/admin/negocios", methods=["GET"])
+def api_admin_negocios():
+    key = request.args.get("key", "")
+    if key != ADMIN_KEY:
+        return jsonify({"error": "No autorizado"}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""SELECT n.*, 
+        (SELECT COUNT(*) FROM citas WHERE negocio_id = n.id AND estado = 'confirmada' AND fecha >= CURRENT_DATE) as citas_pendientes,
+        (SELECT COUNT(*) FROM citas WHERE negocio_id = n.id) as citas_total
+        FROM negocios n ORDER BY n.id""")
+    negocios = c.fetchall()
+    conn.close()
+    result = []
+    for n in negocios:
+        result.append({
+            "id": n["id"], "nombre": n["nombre"], "slug": n["slug"],
+            "direccion": n["direccion"], "telefono_contacto": n["telefono_contacto"],
+            "zona_horaria": n["zona_horaria"], "activo": n["activo"],
+            "citas_pendientes": n["citas_pendientes"], "citas_total": n["citas_total"],
+            "fecha_creacion": n["fecha_creacion"].isoformat() if n["fecha_creacion"] else ""
+        })
+    return jsonify(result)
+
+@app.route("/api/admin/negocios", methods=["POST"])
+def api_admin_crear_negocio():
+    key = request.args.get("key", "")
+    if key != ADMIN_KEY:
+        return jsonify({"error": "No autorizado"}), 403
+    data = request.json
+    nombre = data.get("nombre", "").strip()
+    if not nombre:
+        return jsonify({"error": "Nombre requerido"}), 400
+
+    # Generate slug from name
+    slug = nombre.lower().replace(" ", "-").replace("'", "")
+    slug = re.sub(r'[^a-z0-9\-]', '', slug)
+    slug = re.sub(r'-+', '-', slug).strip('-')
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Check slug is unique
+    c.execute("SELECT id FROM negocios WHERE slug = %s", (slug,))
+    if c.fetchone():
+        slug = slug + "-" + str(int(datetime.now().timestamp()) % 10000)
+
+    c.execute("""INSERT INTO negocios (nombre, slug, direccion, telefono_contacto, zona_horaria)
+        VALUES (%s, %s, %s, %s, %s) RETURNING id, slug""",
+        (nombre, slug, data.get("direccion", ""), data.get("telefono_contacto", ""),
+         data.get("zona_horaria", "America/Chicago")))
+    row = c.fetchone()
+    negocio_id = row["id"]
+    slug_final = row["slug"]
+
+    # Create default schedule (Mon-Fri 9-7, Sat 9-5)
+    horarios_default = [(0,"09:00","19:00"),(1,"09:00","19:00"),(2,"09:00","19:00"),
+                        (3,"09:00","19:00"),(4,"09:00","19:00"),(5,"09:00","17:00")]
+    for dia, ini, fin in horarios_default:
+        c.execute("INSERT INTO horarios (negocio_id, dia_semana, hora_inicio, hora_fin) VALUES (%s,%s,%s,%s)",
+                  (negocio_id, dia, ini, fin))
+
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "id": negocio_id, "slug": slug_final})
+
+@app.route("/api/admin/negocios/<int:negocio_id>/toggle", methods=["POST"])
+def api_admin_toggle_negocio(negocio_id):
+    key = request.args.get("key", "")
+    if key != ADMIN_KEY:
+        return jsonify({"error": "No autorizado"}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE negocios SET activo = NOT activo WHERE id = %s", (negocio_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
+# ══════════════════════════════════════════════
 # Config API endpoints
 # ══════════════════════════════════════════════
 @app.route("/api/negocio/<int:negocio_id>", methods=["GET"])
