@@ -11,7 +11,6 @@
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:12px}
 .header-left{display:flex;align-items:center;gap:12px}
-.logo{font-size:18px;font-weight:700;color:var(--accent)}
 .biz-name{font-size:20px;color:var(--text);font-weight:700}
 .nav-link{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s;margin-left:8px}
 .nav-link:hover,.nav-link.active{color:var(--accent);border-color:var(--accent)}
@@ -21,6 +20,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .date-nav button{background:var(--card);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 .date-nav button:hover{border-color:var(--accent)}
 .btn-hoy{background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.lang-btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace}
+.lang-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 #fecha-display{font-size:14px;font-weight:600;min-width:160px;text-align:center}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:20px 24px}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px}
@@ -67,30 +68,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="header">
   <div class="header-left">
     <span class="biz-name">{{ negocio.nombre }}</span>
-    <a href="/dashboard/{{ negocio.slug }}" class="nav-link active">Citas</a>
-    <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link">Config</a>
+    <a href="/dashboard/{{ negocio.slug }}" class="nav-link active" id="nav-citas"></a>
+    <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link" id="nav-config">Config</a>
   </div>
   <div class="header-right">
+    <button class="lang-btn" onclick="toggleLang()" id="lang-btn"></button>
     <div class="date-nav">
       <button onclick="cambiarFecha(-1)">‹</button>
       <span id="fecha-display"></span>
       <button onclick="cambiarFecha(1)">›</button>
-      <button class="btn-hoy" onclick="irAHoy()">Hoy</button>
+      <button class="btn-hoy" onclick="irAHoy()" id="btn-today"></button>
     </div>
     <span class="reloj" id="reloj"></span>
   </div>
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-label">Citas</div><div class="stat-value accent" id="st-total">-</div></div>
-  <div class="stat"><div class="stat-label">Completadas</div><div class="stat-value green" id="st-comp">-</div></div>
-  <div class="stat"><div class="stat-label">Canceladas</div><div class="stat-value red" id="st-cancel">-</div></div>
-  <div class="stat"><div class="stat-label">No-shows</div><div class="stat-value amber" id="st-noshow">-</div></div>
-  <div class="stat"><div class="stat-label">Ingresos</div><div class="stat-value green" id="st-ingresos">-</div></div>
+  <div class="stat"><div class="stat-label" id="lbl-citas"></div><div class="stat-value accent" id="st-total">-</div></div>
+  <div class="stat"><div class="stat-label" id="lbl-comp"></div><div class="stat-value green" id="st-comp">-</div></div>
+  <div class="stat"><div class="stat-label" id="lbl-cancel"></div><div class="stat-value red" id="st-cancel">-</div></div>
+  <div class="stat"><div class="stat-label" id="lbl-noshow"></div><div class="stat-value amber" id="st-noshow">-</div></div>
+  <div class="stat"><div class="stat-label" id="lbl-income"></div><div class="stat-value green" id="st-ingresos">-</div></div>
 </div>
 
 <div class="section">
-  <div class="section-title"><div class="dot" style="background:var(--accent2)"></div> Citas del día</div>
+  <div class="section-title"><div class="dot" style="background:var(--accent2)"></div> <span id="lbl-dayappts"></span></div>
   <div class="citas-grid" id="citas-list"></div>
 </div>
 
@@ -99,35 +101,82 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script>
 var NID = {{ negocio.id }};
 var fechaActual = new Date();
-var dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// ── Language system ──
+var T = {
+  es: {
+    citas:'Citas', completed:'Completadas', cancelled:'Canceladas', noshow:'No-shows',
+    income:'Ingresos', dayAppts:'Citas del día', today:'Hoy', navCitas:'Citas',
+    empty:'Sin citas para este día', complete:'Completada', noshowBtn:'No show',
+    cancel:'Cancelar', confirmCancel:'¿Cancelar esta cita? Se notificará al cliente.',
+    confirmMark:'¿Marcar como ', langBtn:'EN', confirmed:'confirmada', completedSt:'completada',
+    cancelledSt:'cancelada', no_showSt:'no show',
+    dias:['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
+    meses:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  },
+  en: {
+    citas:'Appointments', completed:'Completed', cancelled:'Cancelled', noshow:'No-shows',
+    income:'Revenue', dayAppts:"Today's appointments", today:'Today', navCitas:'Appointments',
+    empty:'No appointments for this day', complete:'Complete', noshowBtn:'No show',
+    cancel:'Cancel', confirmCancel:'Cancel this appointment? The client will be notified.',
+    confirmMark:'Mark as ', langBtn:'ES', confirmed:'confirmed', completedSt:'completed',
+    cancelledSt:'cancelled', no_showSt:'no show',
+    dias:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    meses:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  }
+};
+
+var lang = localStorage.getItem('nx_lang') || 'es';
+
+function toggleLang(){
+  lang = lang==='es'?'en':'es';
+  localStorage.setItem('nx_lang', lang);
+  applyLang();
+  cargar();
+}
+
+function applyLang(){
+  var t = T[lang];
+  document.getElementById('lang-btn').textContent = t.langBtn;
+  document.getElementById('btn-today').textContent = t.today;
+  document.getElementById('nav-citas').textContent = t.navCitas;
+  document.getElementById('lbl-citas').textContent = t.citas;
+  document.getElementById('lbl-comp').textContent = t.completed;
+  document.getElementById('lbl-cancel').textContent = t.cancelled;
+  document.getElementById('lbl-noshow').textContent = t.noshow;
+  document.getElementById('lbl-income').textContent = t.income;
+  document.getElementById('lbl-dayappts').textContent = t.dayAppts;
+}
 
 setInterval(function(){
-  document.getElementById('reloj').textContent = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('reloj').textContent = new Date().toLocaleTimeString(lang==='es'?'es-MX':'en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }, 1000);
 
-function fmt(d){ return dias[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()]+' '+d.getFullYear(); }
-function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function cambiarFecha(delta){ fechaActual.setDate(fechaActual.getDate()+delta); cargar(); }
-function irAHoy(){ fechaActual = new Date(); cargar(); }
+function fmt(d){var t=T[lang]; return t.dias[d.getDay()]+' '+d.getDate()+' '+t.meses[d.getMonth()]+' '+d.getFullYear();}
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function cambiarFecha(delta){fechaActual.setDate(fechaActual.getDate()+delta);cargar();}
+function irAHoy(){fechaActual=new Date();cargar();}
 
 function cargar(){
-  document.getElementById('fecha-display').textContent = fmt(fechaActual);
-  var f = iso(fechaActual);
+  var t=T[lang];
+  document.getElementById('fecha-display').textContent=fmt(fechaActual);
+  var f=iso(fechaActual);
 
   fetch('/api/citas/'+NID+'?fecha='+f).then(function(r){return r.json();}).then(function(citas){
-    var el = document.getElementById('citas-list');
-    if(!citas.length){ el.innerHTML='<div class="vacio">Sin citas para este día</div>'; return; }
+    var el=document.getElementById('citas-list');
+    if(!citas.length){el.innerHTML='<div class="vacio">'+t.empty+'</div>';return;}
     var html='';
     for(var i=0;i<citas.length;i++){
       var c=citas[i];
       var acciones='';
       if(c.estado==='confirmada'){
-        acciones='<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">Completada</button>'
-          +'<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">No show</button>'
-          +'<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">Cancelar</button>';
+        acciones='<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">'+t.complete+'</button>'
+          +'<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">'+t.noshowBtn+'</button>'
+          +'<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">'+t.cancel+'</button>';
       } else {
-        acciones='<span class="estado-badge estado-'+c.estado+'">'+c.estado.replace('_',' ')+'</span>';
+        var stKey = c.estado+'St';
+        var stText = t[stKey] || c.estado.replace('_',' ');
+        acciones='<span class="estado-badge estado-'+c.estado+'">'+stText+'</span>';
       }
       html+='<div class="cita">'
         +'<div class="cita-hora"><div class="inicio">'+c.hora_inicio+'</div><div class="fin">'+c.hora_fin+'</div><div class="duracion">'+c.duracion_min+'min</div></div>'
@@ -148,11 +197,13 @@ function cargar(){
 }
 
 function cambiarEstado(id,estado){
-  var msg=estado==='cancelada'?'¿Cancelar esta cita? Se notificará al cliente.':'¿Marcar como '+estado.replace('_',' ')+'?';
+  var t=T[lang];
+  var msg=estado==='cancelada'?t.confirmCancel:t.confirmMark+estado.replace('_',' ')+'?';
   if(!confirm(msg))return;
   fetch('/api/citas/'+id+'/estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:estado})}).then(function(){cargar();});
 }
 
+applyLang();
 cargar();
 setInterval(cargar,8000);
 </script>

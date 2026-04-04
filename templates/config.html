@@ -72,9 +72,12 @@ input:focus,select:focus{border-color:var(--accent)}
   <div class="header-left">
     <span class="biz-name">{{ negocio.nombre }}</span>
   </div>
-  <div class="nav-links">
-    <a href="/dashboard/{{ negocio.slug }}" class="nav-link">Citas</a>
-    <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link active">Configuración</a>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="nav-links">
+      <a href="/dashboard/{{ negocio.slug }}" class="nav-link" id="nav-citas">Citas</a>
+      <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link active" id="nav-config">Config</a>
+    </div>
+    <button onclick="toggleLang()" id="lang-btn" style="background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace"></button>
   </div>
 </div>
 
@@ -82,24 +85,24 @@ input:focus,select:focus{border-color:var(--accent)}
 
   <!-- Business Info -->
   <div class="section">
-    <div class="section-title"><span><span class="icon">🏪</span> Información del negocio</span></div>
-    <div class="form-full"><label>Nombre</label><input id="biz-nombre" placeholder="Nombre del negocio"></div>
-    <div class="form-row"><div><label>Dirección</label><input id="biz-dir" placeholder="Dirección"></div><div><label>Teléfono contacto</label><input id="biz-tel" placeholder="(956) 555-0100"></div></div>
-    <div class="form-full"><label>Número WhatsApp (Twilio)</label><input id="biz-wa" placeholder="whatsapp:+19564520260"></div>
-    <button class="btn btn-primary" onclick="guardarNegocio()">Guardar cambios</button>
+    <div class="section-title"><span><span class="icon">🏪</span> <span id="lbl-bizinfo">Información del negocio</span></span></div>
+    <div class="form-full"><label id="lbl-name">Nombre</label><input id="biz-nombre" placeholder=""></div>
+    <div class="form-row"><div><label id="lbl-address">Dirección</label><input id="biz-dir" placeholder=""></div><div><label id="lbl-phone">Teléfono contacto</label><input id="biz-tel" placeholder="(956) 555-0100"></div></div>
+    <div class="form-full"><label id="lbl-wa">Número WhatsApp (Twilio)</label><input id="biz-wa" placeholder="whatsapp:+19564520260"></div>
+    <button class="btn btn-primary" onclick="guardarNegocio()" id="btn-save-biz">Guardar cambios</button>
   </div>
 
   <!-- Services -->
   <div class="section">
-    <div class="section-title"><span><span class="icon">📋</span> Servicios</span><button class="btn btn-success btn-small" onclick="abrirModalServicio()">+ Agregar</button></div>
+    <div class="section-title"><span><span class="icon">📋</span> <span id="lbl-services">Servicios</span></span><button class="btn btn-success btn-small" onclick="abrirModalServicio()" id="btn-add-srv">+ Agregar</button></div>
     <div id="servicios-list"></div>
   </div>
 
   <!-- Schedule -->
   <div class="section">
-    <div class="section-title"><span><span class="icon">🕐</span> Horarios</span></div>
+    <div class="section-title"><span><span class="icon">🕐</span> <span id="lbl-schedule">Horarios</span></span></div>
     <div id="horarios-list"></div>
-    <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarHorarios()">Guardar horarios</button></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarHorarios()" id="btn-save-hrs">Guardar horarios</button></div>
   </div>
 
 </div>
@@ -127,8 +130,62 @@ input:focus,select:focus{border-color:var(--accent)}
 <script>
 var NID = {{ negocio.id }};
 var SLUG = '{{ negocio.slug }}';
-var diasNombres = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 var horariosDatos = [];
+
+// ── Language ──
+var T = {
+  es: {
+    bizinfo:'Información del negocio', name:'Nombre', address:'Dirección', phone:'Teléfono contacto',
+    wa:'Número WhatsApp (Twilio)', saveBiz:'Guardar cambios', services:'Servicios', addSrv:'+ Agregar',
+    schedule:'Horarios', saveHrs:'Guardar horarios', navCitas:'Citas', navConfig:'Config',
+    langBtn:'EN', edit:'Editar', addService:'Agregar servicio', editService:'Editar servicio',
+    srvName:'Nombre del servicio', price:'Precio ($)', duration:'Duración (min)',
+    cancelBtn:'Cancelar', saveBtn:'Guardar', noServices:'Sin servicios configurados', inactive:'(inactivo)',
+    deactivate:'¿Desactivar este servicio?', srvUpdated:'Servicio actualizado', srvAdded:'Servicio agregado',
+    srvDeactivated:'Servicio desactivado', infoSaved:'Información guardada', hrsSaved:'Horarios guardados',
+    fillAll:'Llena todos los campos',
+    dias:['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
+  },
+  en: {
+    bizinfo:'Business information', name:'Name', address:'Address', phone:'Contact phone',
+    wa:'WhatsApp number (Twilio)', saveBiz:'Save changes', services:'Services', addSrv:'+ Add',
+    schedule:'Schedule', saveHrs:'Save schedule', navCitas:'Appointments', navConfig:'Config',
+    langBtn:'ES', edit:'Edit', addService:'Add service', editService:'Edit service',
+    srvName:'Service name', price:'Price ($)', duration:'Duration (min)',
+    cancelBtn:'Cancel', saveBtn:'Save', noServices:'No services configured', inactive:'(inactive)',
+    deactivate:'Deactivate this service?', srvUpdated:'Service updated', srvAdded:'Service added',
+    srvDeactivated:'Service deactivated', infoSaved:'Information saved', hrsSaved:'Schedule saved',
+    fillAll:'Fill all fields',
+    dias:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+  }
+};
+var diasNombres;
+var lang = localStorage.getItem('nx_lang') || 'es';
+
+function toggleLang(){
+  lang = lang==='es'?'en':'es';
+  localStorage.setItem('nx_lang', lang);
+  applyLang();
+  cargarHorarios();
+}
+
+function applyLang(){
+  var t = T[lang];
+  diasNombres = t.dias;
+  document.getElementById('lang-btn').textContent = t.langBtn;
+  document.getElementById('nav-citas').textContent = t.navCitas;
+  document.getElementById('nav-config').textContent = t.navConfig;
+  document.getElementById('lbl-bizinfo').textContent = t.bizinfo;
+  document.getElementById('lbl-name').textContent = t.name;
+  document.getElementById('lbl-address').textContent = t.address;
+  document.getElementById('lbl-phone').textContent = t.phone;
+  document.getElementById('lbl-wa').textContent = t.wa;
+  document.getElementById('btn-save-biz').textContent = t.saveBiz;
+  document.getElementById('lbl-services').textContent = t.services;
+  document.getElementById('btn-add-srv').textContent = t.addSrv;
+  document.getElementById('lbl-schedule').textContent = t.schedule;
+  document.getElementById('btn-save-hrs').textContent = t.saveHrs;
+}
 
 function toast(msg){
   var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
@@ -248,6 +305,7 @@ function guardarHorarios(){
     .then(function(){toast('Horarios guardados');});
 }
 
+applyLang();
 cargarNegocio();
 cargarServicios();
 cargarHorarios();
