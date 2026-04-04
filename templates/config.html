@@ -84,7 +84,8 @@ input:focus,select:focus{border-color:var(--accent)}
   <div class="section">
     <div class="section-title"><span><span class="icon">🏪</span> Información del negocio</span></div>
     <div class="form-full"><label>Nombre</label><input id="biz-nombre" placeholder="Nombre del negocio"></div>
-    <div class="form-row"><div><label>Dirección</label><input id="biz-dir" placeholder="Dirección"></div><div><label>Teléfono</label><input id="biz-tel" placeholder="(956) 555-0100"></div></div>
+    <div class="form-row"><div><label>Dirección</label><input id="biz-dir" placeholder="Dirección"></div><div><label>Teléfono contacto</label><input id="biz-tel" placeholder="(956) 555-0100"></div></div>
+    <div class="form-full"><label>Número WhatsApp (Twilio)</label><input id="biz-wa" placeholder="whatsapp:+19564520260"></div>
     <button class="btn btn-primary" onclick="guardarNegocio()">Guardar cambios</button>
   </div>
 
@@ -140,13 +141,15 @@ function cargarNegocio(){
     document.getElementById('biz-nombre').value=d.nombre||'';
     document.getElementById('biz-dir').value=d.direccion||'';
     document.getElementById('biz-tel').value=d.telefono_contacto||'';
+    document.getElementById('biz-wa').value=d.telefono_whatsapp||'';
   });
 }
 function guardarNegocio(){
   fetch('/api/negocio/'+NID,{method:'PUT',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({nombre:document.getElementById('biz-nombre').value,
       direccion:document.getElementById('biz-dir').value,
-      telefono_contacto:document.getElementById('biz-tel').value})
+      telefono_contacto:document.getElementById('biz-tel').value,
+      telefono_whatsapp:document.getElementById('biz-wa').value})
   }).then(function(){toast('Información guardada');});
 }
 

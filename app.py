@@ -728,7 +728,7 @@ def api_admin_toggle_negocio(negocio_id):
 def api_get_negocio(negocio_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, nombre, slug, direccion, telefono_contacto, zona_horaria FROM negocios WHERE id = %s", (negocio_id,))
+    c.execute("SELECT id, nombre, slug, direccion, telefono_contacto, telefono_whatsapp, zona_horaria FROM negocios WHERE id = %s", (negocio_id,))
     neg = c.fetchone()
     conn.close()
     if not neg:
@@ -740,8 +740,8 @@ def api_update_negocio(negocio_id):
     data = request.json
     conn = get_db()
     c = conn.cursor()
-    c.execute("""UPDATE negocios SET nombre = %s, direccion = %s, telefono_contacto = %s
-        WHERE id = %s""", (data.get("nombre"), data.get("direccion"), data.get("telefono_contacto"), negocio_id))
+    c.execute("""UPDATE negocios SET nombre = %s, direccion = %s, telefono_contacto = %s, telefono_whatsapp = %s
+        WHERE id = %s""", (data.get("nombre"), data.get("direccion"), data.get("telefono_contacto"), data.get("telefono_whatsapp"), negocio_id))
     conn.commit()
     conn.close()
     return jsonify({"ok": True})
