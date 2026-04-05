@@ -720,6 +720,22 @@ def api_admin_toggle_negocio(negocio_id):
     conn.close()
     return jsonify({"ok": True})
 
+@app.route("/api/admin/negocios/<int:negocio_id>", methods=["DELETE"])
+def api_admin_delete_negocio(negocio_id):
+    key = request.args.get("key", "")
+    if key != ADMIN_KEY:
+        return jsonify({"error": "No autorizado"}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("DELETE FROM conversaciones WHERE negocio_id = %s", (negocio_id,))
+    c.execute("DELETE FROM citas WHERE negocio_id = %s", (negocio_id,))
+    c.execute("DELETE FROM horarios WHERE negocio_id = %s", (negocio_id,))
+    c.execute("DELETE FROM servicios WHERE negocio_id = %s", (negocio_id,))
+    c.execute("DELETE FROM negocios WHERE id = %s", (negocio_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
 
 # ══════════════════════════════════════════════
 # Config API endpoints

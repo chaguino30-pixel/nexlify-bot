@@ -129,6 +129,7 @@ function cargar(){
         +'<a href="/dashboard/'+n.slug+'" class="btn btn-primary btn-small" target="_blank">Dashboard</a>'
         +'<a href="/dashboard/'+n.slug+'/config" class="btn btn-small" style="background:var(--card);color:var(--text);border:1px solid var(--border)" target="_blank">Config</a>'
         +'<button class="btn btn-small '+(n.activo?'btn-danger':'btn-success')+'" onclick="toggleNegocio('+n.id+')">'+(n.activo?'Desactivar':'Activar')+'</button>'
+        +'<button class="btn btn-small" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;margin-top:4px" onclick="borrarNegocio('+n.id+',\''+n.nombre.replace(/'/g,"\\'")+'\')">Borrar</button>'
         +'</div></div>';
     }
     el.innerHTML=html;
@@ -168,6 +169,12 @@ function crearNegocio(){
 function toggleNegocio(id){
   if(!confirm('¿Cambiar estado de este negocio?'))return;
   fetch('/api/admin/negocios/'+id+'/toggle?key='+KEY,{method:'POST'}).then(function(){cargar();toast('Estado cambiado');});
+}
+
+function borrarNegocio(id,nombre){
+  if(!confirm('¿BORRAR "'+nombre+'" y todas sus citas? Esta acción NO se puede deshacer.'))return;
+  if(!confirm('¿Estás seguro? Se eliminarán TODOS los datos de este negocio.'))return;
+  fetch('/api/admin/negocios/'+id+'?key='+KEY,{method:'DELETE'}).then(function(){cargar();toast('Negocio eliminado');});
 }
 
 cargar();
