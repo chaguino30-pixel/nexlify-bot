@@ -8,23 +8,24 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0a0f;--surface:#12121a;--card:#16162a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--green:#00b894;--red:#e94560;--amber:#f59e0b;--text:#e2e2e8;--muted:#6b6b80;--radius:12px}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:12px}
+[data-theme="light"]{--bg:#f5f5f7;--surface:#ffffff;--card:#ffffff;--border:#e0e0e5;--accent:#6c5ce7;--accent2:#00897b;--green:#00a67e;--red:#dc3545;--amber:#e6a200;--text:#1a1a2e;--muted:#6b6b80;--radius:12px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:12px;transition:background .3s}
 .header-left{display:flex;align-items:center;gap:12px}
 .biz-name{font-size:20px;color:var(--text);font-weight:700}
 .nav-link{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s;margin-left:8px}
 .nav-link:hover,.nav-link.active{color:var(--accent);border-color:var(--accent)}
-.header-right{display:flex;align-items:center;gap:16px}
+.header-right{display:flex;align-items:center;gap:12px}
 .reloj{font-family:'Space Mono',monospace;font-size:13px;color:var(--muted)}
 .date-nav{display:flex;align-items:center;gap:8px}
-.date-nav button{background:var(--card);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.date-nav button{background:var(--card);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .3s}
 .date-nav button:hover{border-color:var(--accent)}
 .btn-hoy{background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
-.lang-btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace}
-.lang-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.ctrl-btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace;transition:background .3s}
+.ctrl-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 #fecha-display{font-size:14px;font-weight:600;min-width:160px;text-align:center}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:20px 24px}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;transition:background .3s}
 .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;font-family:'Space Mono',monospace}
 .stat-value{font-size:28px;font-weight:700}
 .stat-value.green{color:var(--green)}.stat-value.red{color:var(--red)}.stat-value.amber{color:var(--amber)}.stat-value.accent{color:var(--accent)}
@@ -32,7 +33,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .section-title .dot{width:8px;height:8px;border-radius:50%}
 .citas-grid{display:grid;gap:10px}
-.cita{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:grid;grid-template-columns:80px 1fr auto;gap:16px;align-items:center;transition:border-color .2s}
+.cita{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:grid;grid-template-columns:80px 1fr auto;gap:16px;align-items:center;transition:border-color .2s,background .3s}
 .cita:hover{border-color:var(--accent)}
 .cita-hora{text-align:center}
 .cita-hora .inicio{font-size:16px;font-weight:700;color:var(--accent2)}
@@ -72,7 +73,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link" id="nav-config">Config</a>
   </div>
   <div class="header-right">
-    <button class="lang-btn" onclick="toggleLang()" id="lang-btn"></button>
+    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="ctrl-btn" onclick="toggleLang()" id="lang-btn"></button>
     <div class="date-nav">
       <button onclick="cambiarFecha(-1)">‹</button>
       <span id="fecha-display"></span>
@@ -102,15 +104,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 var NID = {{ negocio.id }};
 var fechaActual = new Date();
 
-// ── Language system ──
+// ── Theme ──
+var theme = localStorage.getItem('nx_theme') || 'dark';
+function applyTheme(){
+  if(theme === 'light'){
+    document.documentElement.setAttribute('data-theme','light');
+    document.getElementById('theme-btn').textContent = '🌙';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('theme-btn').textContent = '☀️';
+  }
+}
+function toggleTheme(){
+  theme = (theme === 'dark') ? 'light' : 'dark';
+  localStorage.setItem('nx_theme', theme);
+  applyTheme();
+}
+applyTheme();
+
+// ── Language ──
 var T = {
   es: {
     citas:'Citas', completed:'Completadas', cancelled:'Canceladas', noshow:'No-shows',
     income:'Ingresos', dayAppts:'Citas del día', today:'Hoy', navCitas:'Citas',
     empty:'Sin citas para este día', complete:'Completada', noshowBtn:'No show',
     cancel:'Cancelar', confirmCancel:'¿Cancelar esta cita? Se notificará al cliente.',
-    confirmMark:'¿Marcar como ', langBtn:'EN', confirmed:'confirmada', completedSt:'completada',
-    cancelledSt:'cancelada', no_showSt:'no show',
+    confirmMark:'¿Marcar como ', langBtn:'EN',
     dias:['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
     meses:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   },
@@ -119,8 +138,7 @@ var T = {
     income:'Revenue', dayAppts:"Today's appointments", today:'Today', navCitas:'Appointments',
     empty:'No appointments for this day', complete:'Complete', noshowBtn:'No show',
     cancel:'Cancel', confirmCancel:'Cancel this appointment? The client will be notified.',
-    confirmMark:'Mark as ', langBtn:'ES', confirmed:'confirmed', completedSt:'completed',
-    cancelledSt:'cancelled', no_showSt:'no show',
+    confirmMark:'Mark as ', langBtn:'ES',
     dias:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     meses:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   }
@@ -129,83 +147,81 @@ var T = {
 var lang = localStorage.getItem('nx_lang') || 'es';
 
 function toggleLang(){
-  lang = lang==='es'?'en':'es';
+  lang = (lang === 'es') ? 'en' : 'es';
   localStorage.setItem('nx_lang', lang);
   applyLang();
   cargar();
 }
 
 function applyLang(){
-  var t = T[lang];
-  document.getElementById('lang-btn').textContent = t.langBtn;
-  document.getElementById('btn-today').textContent = t.today;
-  document.getElementById('nav-citas').textContent = t.navCitas;
-  document.getElementById('lbl-citas').textContent = t.citas;
-  document.getElementById('lbl-comp').textContent = t.completed;
-  document.getElementById('lbl-cancel').textContent = t.cancelled;
-  document.getElementById('lbl-noshow').textContent = t.noshow;
-  document.getElementById('lbl-income').textContent = t.income;
-  document.getElementById('lbl-dayappts').textContent = t.dayAppts;
+  var s = T[lang];
+  document.getElementById('lang-btn').textContent = s.langBtn;
+  document.getElementById('btn-today').textContent = s.today;
+  document.getElementById('nav-citas').textContent = s.navCitas;
+  document.getElementById('lbl-citas').textContent = s.citas;
+  document.getElementById('lbl-comp').textContent = s.completed;
+  document.getElementById('lbl-cancel').textContent = s.cancelled;
+  document.getElementById('lbl-noshow').textContent = s.noshow;
+  document.getElementById('lbl-income').textContent = s.income;
+  document.getElementById('lbl-dayappts').textContent = s.dayAppts;
 }
+applyLang();
 
 setInterval(function(){
   document.getElementById('reloj').textContent = new Date().toLocaleTimeString(lang==='es'?'es-MX':'en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }, 1000);
 
-function fmt(d){var t=T[lang]; return t.dias[d.getDay()]+' '+d.getDate()+' '+t.meses[d.getMonth()]+' '+d.getFullYear();}
-function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function cambiarFecha(delta){fechaActual.setDate(fechaActual.getDate()+delta);cargar();}
-function irAHoy(){fechaActual=new Date();cargar();}
+function fmt(d){ var s=T[lang]; return s.dias[d.getDay()]+' '+d.getDate()+' '+s.meses[d.getMonth()]+' '+d.getFullYear(); }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cambiarFecha(delta){ fechaActual.setDate(fechaActual.getDate()+delta); cargar(); }
+function irAHoy(){ fechaActual = new Date(); cargar(); }
 
 function cargar(){
-  var t=T[lang];
-  document.getElementById('fecha-display').textContent=fmt(fechaActual);
-  var f=iso(fechaActual);
+  var s = T[lang];
+  document.getElementById('fecha-display').textContent = fmt(fechaActual);
+  var f = iso(fechaActual);
 
-  fetch('/api/citas/'+NID+'?fecha='+f).then(function(r){return r.json();}).then(function(citas){
-    var el=document.getElementById('citas-list');
-    if(!citas.length){el.innerHTML='<div class="vacio">'+t.empty+'</div>';return;}
-    var html='';
-    for(var i=0;i<citas.length;i++){
-      var c=citas[i];
-      var acciones='';
-      if(c.estado==='confirmada'){
-        acciones='<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">'+t.complete+'</button>'
-          +'<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">'+t.noshowBtn+'</button>'
-          +'<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">'+t.cancel+'</button>';
+  fetch('/api/citas/'+NID+'?fecha='+f).then(function(r){ return r.json(); }).then(function(citas){
+    var el = document.getElementById('citas-list');
+    if(!citas.length){ el.innerHTML = '<div class="vacio">'+s.empty+'</div>'; return; }
+    var html = '';
+    for(var i = 0; i < citas.length; i++){
+      var c = citas[i];
+      var acciones = '';
+      if(c.estado === 'confirmada'){
+        acciones = '<button class="btn-sm btn-completar" onclick="cambiarEstado('+c.id+',\'completada\')">'+s.complete+'</button>'
+          + '<button class="btn-sm btn-noshow" onclick="cambiarEstado('+c.id+',\'no_show\')">'+s.noshowBtn+'</button>'
+          + '<button class="btn-sm btn-cancelar" onclick="cambiarEstado('+c.id+',\'cancelada\')">'+s.cancel+'</button>';
       } else {
-        var stKey = c.estado+'St';
-        var stText = t[stKey] || c.estado.replace('_',' ');
-        acciones='<span class="estado-badge estado-'+c.estado+'">'+stText+'</span>';
+        acciones = '<span class="estado-badge estado-'+c.estado+'">'+c.estado.replace('_',' ')+'</span>';
       }
-      html+='<div class="cita">'
-        +'<div class="cita-hora"><div class="inicio">'+c.hora_inicio+'</div><div class="fin">'+c.hora_fin+'</div><div class="duracion">'+c.duracion_min+'min</div></div>'
-        +'<div class="cita-info"><h4>'+c.nombre_cliente+'</h4><div class="servicio">'+c.servicio_nombre+'</div><div class="precio">$'+c.servicio_precio.toFixed(0)+'</div><div class="tel">'+c.telefono_cliente+'</div></div>'
-        +'<div class="cita-actions">'+acciones+'</div>'
-        +'</div>';
+      html += '<div class="cita">'
+        + '<div class="cita-hora"><div class="inicio">'+c.hora_inicio+'</div><div class="fin">'+c.hora_fin+'</div><div class="duracion">'+c.duracion_min+'min</div></div>'
+        + '<div class="cita-info"><h4>'+c.nombre_cliente+'</h4><div class="servicio">'+c.servicio_nombre+'</div><div class="precio">$'+c.servicio_precio.toFixed(0)+'</div><div class="tel">'+c.telefono_cliente+'</div></div>'
+        + '<div class="cita-actions">'+acciones+'</div>'
+        + '</div>';
     }
-    el.innerHTML=html;
+    el.innerHTML = html;
   });
 
-  fetch('/api/stats/'+NID+'?fecha='+f).then(function(r){return r.json();}).then(function(s){
-    document.getElementById('st-total').textContent=s.hoy_total;
-    document.getElementById('st-comp').textContent=s.completadas;
-    document.getElementById('st-cancel').textContent=s.canceladas;
-    document.getElementById('st-noshow').textContent=s.no_shows;
-    document.getElementById('st-ingresos').textContent='$'+s.ingresos.toFixed(0);
+  fetch('/api/stats/'+NID+'?fecha='+f).then(function(r){ return r.json(); }).then(function(st){
+    document.getElementById('st-total').textContent = st.hoy_total;
+    document.getElementById('st-comp').textContent = st.completadas;
+    document.getElementById('st-cancel').textContent = st.canceladas;
+    document.getElementById('st-noshow').textContent = st.no_shows;
+    document.getElementById('st-ingresos').textContent = '$'+st.ingresos.toFixed(0);
   });
 }
 
-function cambiarEstado(id,estado){
-  var t=T[lang];
-  var msg=estado==='cancelada'?t.confirmCancel:t.confirmMark+estado.replace('_',' ')+'?';
-  if(!confirm(msg))return;
-  fetch('/api/citas/'+id+'/estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:estado})}).then(function(){cargar();});
+function cambiarEstado(id, estado){
+  var s = T[lang];
+  var msg = (estado === 'cancelada') ? s.confirmCancel : s.confirmMark + estado.replace('_',' ') + '?';
+  if(!confirm(msg)) return;
+  fetch('/api/citas/'+id+'/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({estado:estado})}).then(function(){ cargar(); });
 }
 
-applyLang();
 cargar();
-setInterval(cargar,8000);
+setInterval(cargar, 8000);
 </script>
 </body>
 </html>
