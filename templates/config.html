@@ -8,23 +8,23 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0a0f;--surface:#12121a;--card:#16162a;--border:#1e1e2e;--accent:#6c5ce7;--accent2:#00cec9;--green:#00b894;--red:#e94560;--amber:#f59e0b;--text:#e2e2e8;--muted:#6b6b80;--radius:12px}
-[data-theme="light"]{--bg:#f5f5f7;--surface:#ffffff;--card:#ffffff;--border:#e0e0e5;--accent:#6c5ce7;--accent2:#00897b;--green:#00a67e;--red:#dc3545;--amber:#e6a200;--text:#1a1a2e;--muted:#6b6b80;--radius:12px}
+[data-theme="light"]{--bg:#f5f5f7;--surface:#ffffff;--card:#ffffff;--border:#e0e0e5;--accent:#6c5ce7;--accent2:#00897b;--green:#00a67e;--red:#dc3545;--amber:#e6a200;--text:#1a1a2e;--muted:#6b6b80}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;transition:background .3s}
 .header-left{display:flex;align-items:center;gap:12px}
 .biz-name{font-size:20px;color:var(--text);font-weight:700}
 .nav-links{display:flex;gap:8px;align-items:center}
 .nav-link{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:all .2s}
 .nav-link:hover,.nav-link.active{color:var(--accent);border-color:var(--accent)}
-.lang-btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace}
-.lang-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.ctrl-btn{background:var(--card);color:var(--text);border:1px solid var(--border);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Space Mono',monospace;transition:background .3s}
+.ctrl-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 .content{max-width:800px;margin:0 auto;padding:24px}
-.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;transition:background .3s}
 .section-title{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.section-title .icon{font-size:20px;margin-right:8px}
+.icon{font-size:20px;margin-right:8px}
 label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-bottom:4px}
-input,select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
-input:focus,select:focus{border-color:var(--accent)}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,background .3s}
+input:focus{border-color:var(--accent)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .form-full{margin-bottom:12px}
 .btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:transform .1s}
@@ -33,11 +33,9 @@ input:focus,select:focus{border-color:var(--accent)}
 .btn-success{background:var(--green);color:#fff}
 .btn-danger{background:rgba(233,69,96,.15);color:var(--red);border:1px solid rgba(233,69,96,.3)}
 .btn-small{padding:6px 12px;font-size:12px}
-.srv-item{display:grid;grid-template-columns:1fr 80px 80px 60px;gap:8px;align-items:center;padding:12px;border-bottom:1px solid var(--border);font-size:14px}
+.srv-item{display:grid;grid-template-columns:1fr 60px;gap:8px;align-items:center;padding:12px;border-bottom:1px solid var(--border);font-size:14px}
 .srv-item:last-child{border-bottom:none}
 .srv-name{font-weight:500}
-.srv-price{color:var(--green);font-weight:600;text-align:center}
-.srv-dur{color:var(--muted);font-size:12px;text-align:center;font-family:'Space Mono',monospace}
 .srv-actions{display:flex;gap:4px;justify-content:flex-end}
 .srv-inactive{opacity:.4}
 .schedule-row{display:grid;grid-template-columns:100px 1fr 1fr 60px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -55,314 +53,180 @@ input:focus,select:focus{border-color:var(--accent)}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;z-index:200}
 .toast.show{opacity:1}
 .footer{text-align:center;padding:32px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;border-top:1px solid var(--border);margin-top:40px}
-@media(max-width:640px){
-  .srv-item{grid-template-columns:1fr 60px 60px 50px;font-size:13px}
-  .schedule-row{grid-template-columns:80px 1fr 1fr 50px}
-  .form-row{grid-template-columns:1fr}
-}
+@media(max-width:640px){.schedule-row{grid-template-columns:80px 1fr 1fr 50px}.form-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <div class="header">
-  <div class="header-left">
-    <span class="biz-name">{{ negocio.nombre }}</span>
-  </div>
+  <div class="header-left"><span class="biz-name">{{ negocio.nombre }}</span></div>
   <div class="nav-links">
     <a href="/dashboard/{{ negocio.slug }}" class="nav-link" id="nav-citas">Citas</a>
     <a href="/dashboard/{{ negocio.slug }}/config" class="nav-link active" id="nav-config">Config</a>
-    <button class="lang-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
-    <button class="lang-btn" onclick="toggleLang()" id="lang-btn">EN</button>
+    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="ctrl-btn" onclick="toggleLang()" id="lang-btn">EN</button>
   </div>
 </div>
-
 <div class="content">
-
   <div class="section">
-    <div class="section-title"><span><span class="icon">🏪</span> <span id="lbl-bizinfo">Información del negocio</span></span></div>
+    <div class="section-title"><span><span class="icon">🏪</span><span id="lbl-bizinfo">Información del negocio</span></span></div>
     <div class="form-full"><label id="lbl-name">Nombre</label><input id="biz-nombre"></div>
-    <div class="form-row">
-      <div><label id="lbl-address">Dirección</label><input id="biz-dir"></div>
-      <div><label id="lbl-phone">Teléfono contacto</label><input id="biz-tel"></div>
-    </div>
-    <button class="btn btn-primary" onclick="guardarNegocio()" id="btn-save-biz">Guardar cambios</button>
+    <div class="form-row"><div><label id="lbl-address">Dirección</label><input id="biz-dir"></div><div><label id="lbl-phone">Teléfono</label><input id="biz-tel"></div></div>
+    <button class="btn btn-primary" onclick="guardarNegocio()" id="btn-save-biz">Guardar</button>
   </div>
-
   <div class="section">
-    <div class="section-title"><span><span class="icon">📋</span> <span id="lbl-services">Servicios</span></span><button class="btn btn-success btn-small" onclick="abrirModal()" id="btn-add-srv">+ Agregar</button></div>
+    <div class="section-title"><span><span class="icon">📋</span><span id="lbl-services">Servicios</span></span><button class="btn btn-success btn-small" onclick="abrirModal()" id="btn-add-srv">+ Agregar</button></div>
     <div id="servicios-list"></div>
   </div>
-
   <div class="section">
-    <div class="section-title"><span><span class="icon">🕐</span> <span id="lbl-schedule">Horarios</span></span></div>
+    <div class="section-title"><span><span class="icon">🕐</span><span id="lbl-schedule">Horarios</span></span></div>
     <div id="horarios-list"></div>
-    <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarHorarios()" id="btn-save-hrs">Guardar horarios</button></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarHorarios()" id="btn-save-hrs">Guardar</button></div>
   </div>
-
 </div>
-
 <div class="modal-overlay" id="modal-srv">
   <div class="modal">
     <h3 id="modal-title">Agregar servicio</h3>
     <input type="hidden" id="edit-id">
-    <div class="form-full"><label id="lbl-srvname">Nombre del servicio</label><input id="edit-nombre"></div>
-    <div class="form-row">
-      <div><label id="lbl-price">Precio ($)</label><input id="edit-precio" type="number" step="0.5"></div>
-      <div><label id="lbl-duration">Duración (min)</label><input id="edit-dur" type="number" step="5" value="30"></div>
-    </div>
+    <div class="form-full"><label id="lbl-srvname">Nombre del servicio</label><input id="edit-nombre" placeholder=""></div>
     <div class="modal-actions">
-      <button class="btn btn-danger btn-small" onclick="cerrarModal()" id="btn-modal-cancel">Cancelar</button>
-      <button class="btn btn-success btn-small" onclick="guardarServicio()" id="btn-modal-save">Guardar</button>
+      <button class="btn btn-danger btn-small" onclick="cerrarModal()" id="btn-cancel">Cancelar</button>
+      <button class="btn btn-success btn-small" onclick="guardarServicio()" id="btn-save">Guardar</button>
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 <div class="footer">Powered by Nexlify Software & AI</div>
-
 <script>
 var NID = {{ negocio.id }};
 var horarios = [];
 
-// ── Theme ──
 var theme = localStorage.getItem('nx_theme') || 'dark';
 function applyTheme(){
-  if(theme === 'light'){
-    document.documentElement.setAttribute('data-theme','light');
-    document.getElementById('theme-btn').textContent = '🌙';
-  } else {
-    document.documentElement.removeAttribute('data-theme');
-    document.getElementById('theme-btn').textContent = '☀️';
-  }
+  if(theme==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('theme-btn').textContent='🌙';}
+  else{document.documentElement.removeAttribute('data-theme');document.getElementById('theme-btn').textContent='☀️';}
 }
-function toggleTheme(){
-  theme = (theme === 'dark') ? 'light' : 'dark';
-  localStorage.setItem('nx_theme', theme);
-  applyTheme();
-}
+function toggleTheme(){theme=(theme==='dark')?'light':'dark';localStorage.setItem('nx_theme',theme);applyTheme();}
 applyTheme();
 
-var L = {
-  es: {
-    bizinfo:'Información del negocio', name:'Nombre', address:'Dirección', phone:'Teléfono contacto',
-    saveBiz:'Guardar cambios', services:'Servicios', addSrv:'+ Agregar', schedule:'Horarios',
-    saveHrs:'Guardar horarios', navCitas:'Citas', navConfig:'Config', langBtn:'EN',
-    edit:'Editar', addTitle:'Agregar servicio', editTitle:'Editar servicio',
-    srvName:'Nombre del servicio', price:'Precio ($)', duration:'Duración (min)',
-    cancelBtn:'Cancelar', saveBtn:'Guardar', noSrv:'Sin servicios configurados',
-    inactive:'(inactivo)', confirmDeactivate:'¿Desactivar este servicio?',
-    srvUpdated:'Servicio actualizado', srvAdded:'Servicio agregado',
-    srvOff:'Servicio desactivado', saved:'Información guardada', hrsSaved:'Horarios guardados',
-    fillAll:'Llena todos los campos',
-    dias:['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
-  },
-  en: {
-    bizinfo:'Business information', name:'Name', address:'Address', phone:'Contact phone',
-    saveBiz:'Save changes', services:'Services', addSrv:'+ Add', schedule:'Schedule',
-    saveHrs:'Save schedule', navCitas:'Appointments', navConfig:'Config', langBtn:'ES',
-    edit:'Edit', addTitle:'Add service', editTitle:'Edit service',
-    srvName:'Service name', price:'Price ($)', duration:'Duration (min)',
-    cancelBtn:'Cancel', saveBtn:'Save', noSrv:'No services configured',
-    inactive:'(inactive)', confirmDeactivate:'Deactivate this service?',
-    srvUpdated:'Service updated', srvAdded:'Service added',
-    srvOff:'Service deactivated', saved:'Information saved', hrsSaved:'Schedule saved',
-    fillAll:'Fill all fields',
-    dias:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-  }
+var L={
+  es:{bizinfo:'Información del negocio',name:'Nombre',address:'Dirección',phone:'Teléfono',
+    save:'Guardar',services:'Servicios',addSrv:'+ Agregar',schedule:'Horarios',
+    navCitas:'Citas',navConfig:'Config',langBtn:'EN',edit:'Editar',
+    addTitle:'Agregar servicio',editTitle:'Editar servicio',srvName:'Nombre del servicio',
+    cancelBtn:'Cancelar',saveBtn:'Guardar',noSrv:'Sin servicios',inactive:'(inactivo)',
+    confirmOff:'¿Desactivar?',updated:'Actualizado',added:'Agregado',
+    deactivated:'Desactivado',saved:'Guardado',hrsSaved:'Horarios guardados',fillName:'Pon el nombre',
+    dias:['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']},
+  en:{bizinfo:'Business information',name:'Name',address:'Address',phone:'Phone',
+    save:'Save',services:'Services',addSrv:'+ Add',schedule:'Schedule',
+    navCitas:'Appointments',navConfig:'Config',langBtn:'ES',edit:'Edit',
+    addTitle:'Add service',editTitle:'Edit service',srvName:'Service name',
+    cancelBtn:'Cancel',saveBtn:'Save',noSrv:'No services',inactive:'(inactive)',
+    confirmOff:'Deactivate?',updated:'Updated',added:'Added',
+    deactivated:'Deactivated',saved:'Saved',hrsSaved:'Schedule saved',fillName:'Enter name',
+    dias:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']}
 };
-
-var lang = localStorage.getItem('nx_lang') || 'es';
-function t(){ return L[lang]; }
-
-function toggleLang(){
-  lang = (lang==='es') ? 'en' : 'es';
-  localStorage.setItem('nx_lang', lang);
-  applyLang();
-  cargarHorarios();
-}
-
+var lang=localStorage.getItem('nx_lang')||'es';
+function s(){return L[lang];}
+function toggleLang(){lang=(lang==='es')?'en':'es';localStorage.setItem('nx_lang',lang);applyLang();cargarHorarios();}
 function applyLang(){
-  var s = t();
-  document.getElementById('lang-btn').textContent = s.langBtn;
-  document.getElementById('nav-citas').textContent = s.navCitas;
-  document.getElementById('nav-config').textContent = s.navConfig;
-  document.getElementById('lbl-bizinfo').textContent = s.bizinfo;
-  document.getElementById('lbl-name').textContent = s.name;
-  document.getElementById('lbl-address').textContent = s.address;
-  document.getElementById('lbl-phone').textContent = s.phone;
-  document.getElementById('btn-save-biz').textContent = s.saveBiz;
-  document.getElementById('lbl-services').textContent = s.services;
-  document.getElementById('btn-add-srv').textContent = s.addSrv;
-  document.getElementById('lbl-schedule').textContent = s.schedule;
-  document.getElementById('btn-save-hrs').textContent = s.saveHrs;
-  document.getElementById('lbl-srvname').textContent = s.srvName;
-  document.getElementById('lbl-price').textContent = s.price;
-  document.getElementById('lbl-duration').textContent = s.duration;
-  document.getElementById('btn-modal-cancel').textContent = s.cancelBtn;
-  document.getElementById('btn-modal-save').textContent = s.saveBtn;
+  var t=s();
+  document.getElementById('lang-btn').textContent=t.langBtn;
+  document.getElementById('nav-citas').textContent=t.navCitas;
+  document.getElementById('nav-config').textContent=t.navConfig;
+  document.getElementById('lbl-bizinfo').textContent=t.bizinfo;
+  document.getElementById('lbl-name').textContent=t.name;
+  document.getElementById('lbl-address').textContent=t.address;
+  document.getElementById('lbl-phone').textContent=t.phone;
+  document.getElementById('btn-save-biz').textContent=t.save;
+  document.getElementById('lbl-services').textContent=t.services;
+  document.getElementById('btn-add-srv').textContent=t.addSrv;
+  document.getElementById('lbl-schedule').textContent=t.schedule;
+  document.getElementById('btn-save-hrs').textContent=t.save;
+  document.getElementById('lbl-srvname').textContent=t.srvName;
+  document.getElementById('btn-cancel').textContent=t.cancelBtn;
+  document.getElementById('btn-save').textContent=t.saveBtn;
 }
+function showToast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2500);}
 
-function showToast(msg){
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(function(){ el.classList.remove('show'); }, 2500);
-}
-
-// ── Business Info ──
 function cargarNegocio(){
-  fetch('/api/negocio/'+NID).then(function(r){ return r.json(); }).then(function(d){
-    document.getElementById('biz-nombre').value = d.nombre || '';
-    document.getElementById('biz-dir').value = d.direccion || '';
-    document.getElementById('biz-tel').value = d.telefono_contacto || '';
+  fetch('/api/negocio/'+NID).then(function(r){return r.json();}).then(function(d){
+    document.getElementById('biz-nombre').value=d.nombre||'';
+    document.getElementById('biz-dir').value=d.direccion||'';
+    document.getElementById('biz-tel').value=d.telefono_contacto||'';
   });
 }
-
 function guardarNegocio(){
-  var data = {
-    nombre: document.getElementById('biz-nombre').value,
-    direccion: document.getElementById('biz-dir').value,
-    telefono_contacto: document.getElementById('biz-tel').value
-  };
-  fetch('/api/negocio/'+NID, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(data)
-  }).then(function(){ showToast(t().saved); });
+  fetch('/api/negocio/'+NID,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nombre:document.getElementById('biz-nombre').value,direccion:document.getElementById('biz-dir').value,telefono_contacto:document.getElementById('biz-tel').value})
+  }).then(function(){showToast(s().saved);});
 }
 
-// ── Services ──
 function cargarServicios(){
-  fetch('/api/servicios/'+NID).then(function(r){ return r.json(); }).then(function(srvs){
-    var el = document.getElementById('servicios-list');
-    var s = t();
-    if(!srvs.length){
-      el.innerHTML = '<div style="padding:16px;color:var(--muted)">'+s.noSrv+'</div>';
-      return;
+  fetch('/api/servicios/'+NID).then(function(r){return r.json();}).then(function(srvs){
+    var el=document.getElementById('servicios-list'),t=s();
+    if(!srvs.length){el.innerHTML='<div style="padding:16px;color:var(--muted)">'+t.noSrv+'</div>';return;}
+    var h='';
+    for(var i=0;i<srvs.length;i++){
+      var v=srvs[i],cls=v.activo?'':'srv-inactive',nm=v.nombre+(v.activo?'':' '+t.inactive);
+      h+='<div class="srv-item '+cls+'"><div class="srv-name">'+nm+'</div><div class="srv-actions">'
+        +'<button class="btn btn-primary btn-small" onclick="editarSrv('+v.id+',\''+v.nombre.replace(/'/g,"\\'")+'\')">'+t.edit+'</button>'
+        +(v.activo?'<button class="btn btn-danger btn-small" onclick="eliminarSrv('+v.id+')">×</button>':'')
+        +'</div></div>';
     }
-    var html = '';
-    for(var i = 0; i < srvs.length; i++){
-      var sv = srvs[i];
-      var cls = sv.activo ? '' : 'srv-inactive';
-      var nombre = sv.nombre + (sv.activo ? '' : ' '+s.inactive);
-      html += '<div class="srv-item '+cls+'">'
-        + '<div class="srv-name">'+nombre+'</div>'
-        + '<div class="srv-price">$'+sv.precio.toFixed(0)+'</div>'
-        + '<div class="srv-dur">'+sv.duracion_min+'min</div>'
-        + '<div class="srv-actions">'
-        + '<button class="btn btn-primary btn-small" onclick="editarSrv('+sv.id+',\''+sv.nombre.replace(/'/g,"\\'")+'\','+sv.precio+','+sv.duracion_min+')">'+s.edit+'</button>'
-        + (sv.activo ? '<button class="btn btn-danger btn-small" onclick="eliminarSrv('+sv.id+')">×</button>' : '')
-        + '</div></div>';
-    }
-    el.innerHTML = html;
+    el.innerHTML=h;
   });
 }
-
 function abrirModal(){
-  var s = t();
-  document.getElementById('modal-title').textContent = s.addTitle;
-  document.getElementById('edit-id').value = '';
-  document.getElementById('edit-nombre').value = '';
-  document.getElementById('edit-precio').value = '';
-  document.getElementById('edit-dur').value = '30';
+  document.getElementById('modal-title').textContent=s().addTitle;
+  document.getElementById('edit-id').value='';
+  document.getElementById('edit-nombre').value='';
   document.getElementById('modal-srv').classList.add('show');
 }
-
-function editarSrv(id, nombre, precio, dur){
-  var s = t();
-  document.getElementById('modal-title').textContent = s.editTitle;
-  document.getElementById('edit-id').value = id;
-  document.getElementById('edit-nombre').value = nombre;
-  document.getElementById('edit-precio').value = precio;
-  document.getElementById('edit-dur').value = dur;
+function editarSrv(id,nm){
+  document.getElementById('modal-title').textContent=s().editTitle;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-nombre').value=nm;
   document.getElementById('modal-srv').classList.add('show');
 }
-
-function cerrarModal(){
-  document.getElementById('modal-srv').classList.remove('show');
-}
-
+function cerrarModal(){document.getElementById('modal-srv').classList.remove('show');}
 function guardarServicio(){
-  var s = t();
-  var id = document.getElementById('edit-id').value;
-  var data = {
-    nombre: document.getElementById('edit-nombre').value,
-    precio: parseFloat(document.getElementById('edit-precio').value),
-    duracion_min: parseInt(document.getElementById('edit-dur').value)
-  };
-  if(!data.nombre || !data.precio || !data.duracion_min){
-    showToast(s.fillAll);
-    return;
-  }
-  if(id){
-    data.activo = true;
-    fetch('/api/servicios/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
-      .then(function(){ cerrarModal(); cargarServicios(); showToast(s.srvUpdated); });
-  } else {
-    fetch('/api/servicios/'+NID, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
-      .then(function(){ cerrarModal(); cargarServicios(); showToast(s.srvAdded); });
-  }
+  var t=s(),id=document.getElementById('edit-id').value;
+  var nm=document.getElementById('edit-nombre').value.trim();
+  if(!nm){showToast(t.fillName);return;}
+  var data={nombre:nm,precio:0,duracion_min:30};
+  if(id){data.activo=true;fetch('/api/servicios/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(){cerrarModal();cargarServicios();showToast(t.updated);});}
+  else{fetch('/api/servicios/'+NID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(function(){cerrarModal();cargarServicios();showToast(t.added);});}
 }
+function eliminarSrv(id){if(!confirm(s().confirmOff))return;fetch('/api/servicios/'+id,{method:'DELETE'}).then(function(){cargarServicios();showToast(s().deactivated);});}
 
-function eliminarSrv(id){
-  var s = t();
-  if(!confirm(s.confirmDeactivate)) return;
-  fetch('/api/servicios/'+id, {method:'DELETE'})
-    .then(function(){ cargarServicios(); showToast(s.srvOff); });
-}
-
-// ── Schedule ──
 function cargarHorarios(){
-  fetch('/api/horarios/'+NID).then(function(r){ return r.json(); }).then(function(hrs){
-    horarios = [];
-    var s = t();
-    var mapa = {};
-    for(var i = 0; i < hrs.length; i++) mapa[hrs[i].dia_semana] = hrs[i];
-
-    var el = document.getElementById('horarios-list');
-    var html = '';
-    for(var d = 0; d < 7; d++){
-      var h = mapa[d];
-      var activo = h ? h.activo : false;
-      var ini = h ? h.hora_inicio : '09:00';
-      var fin = h ? h.hora_fin : '17:00';
-      horarios.push({dia_semana: d, hora_inicio: ini, hora_fin: fin, activo: activo});
-
-      html += '<div class="schedule-row">'
-        + '<div class="day-name">'+s.dias[d]+'</div>'
-        + '<div><input type="time" value="'+ini+'" onchange="horarios['+d+'].hora_inicio=this.value" '+(activo?'':'disabled')+' id="hi-'+d+'"></div>'
-        + '<div><input type="time" value="'+fin+'" onchange="horarios['+d+'].hora_fin=this.value" '+(activo?'':'disabled')+' id="hf-'+d+'"></div>'
-        + '<div><div class="toggle '+(activo?'on':'')+'" onclick="toggleDia('+d+')" id="tg-'+d+'"></div></div>'
-        + '</div>';
+  fetch('/api/horarios/'+NID).then(function(r){return r.json();}).then(function(hrs){
+    horarios=[];var t=s(),mapa={};
+    for(var i=0;i<hrs.length;i++)mapa[hrs[i].dia_semana]=hrs[i];
+    var el=document.getElementById('horarios-list'),h='';
+    for(var d=0;d<7;d++){
+      var x=mapa[d],on=x?x.activo:false,ini=x?x.hora_inicio:'09:00',fin=x?x.hora_fin:'17:00';
+      horarios.push({dia_semana:d,hora_inicio:ini,hora_fin:fin,activo:on});
+      h+='<div class="schedule-row"><div class="day-name">'+t.dias[d]+'</div>'
+        +'<div><input type="time" value="'+ini+'" onchange="horarios['+d+'].hora_inicio=this.value" '+(on?'':'disabled')+' id="hi-'+d+'"></div>'
+        +'<div><input type="time" value="'+fin+'" onchange="horarios['+d+'].hora_fin=this.value" '+(on?'':'disabled')+' id="hf-'+d+'"></div>'
+        +'<div><div class="toggle '+(on?'on':'')+'" onclick="toggleDia('+d+')" id="tg-'+d+'"></div></div></div>';
     }
-    el.innerHTML = html;
+    el.innerHTML=h;
   });
 }
-
 function toggleDia(d){
-  horarios[d].activo = !horarios[d].activo;
-  var on = horarios[d].activo;
-  var tg = document.getElementById('tg-'+d);
-  var hi = document.getElementById('hi-'+d);
-  var hf = document.getElementById('hf-'+d);
-  if(on){ tg.classList.add('on'); hi.disabled=false; hf.disabled=false; }
-  else { tg.classList.remove('on'); hi.disabled=true; hf.disabled=true; }
+  horarios[d].activo=!horarios[d].activo;var on=horarios[d].activo;
+  var tg=document.getElementById('tg-'+d),hi=document.getElementById('hi-'+d),hf=document.getElementById('hf-'+d);
+  if(on){tg.classList.add('on');hi.disabled=false;hf.disabled=false;}
+  else{tg.classList.remove('on');hi.disabled=true;hf.disabled=true;}
 }
-
 function guardarHorarios(){
-  var s = t();
-  fetch('/api/horarios/'+NID, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(horarios)
-  }).then(function(){ showToast(s.hrsSaved); });
+  fetch('/api/horarios/'+NID,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(horarios)}).then(function(){showToast(s().hrsSaved);});
 }
 
-// ── Init ──
-applyLang();
-cargarNegocio();
-cargarServicios();
-cargarHorarios();
+applyLang();cargarNegocio();cargarServicios();cargarHorarios();
 </script>
 </body>
 </html>
